@@ -1,0 +1,13 @@
+{
+  "name": "@mj/liff",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "~5.8.3"
+  }
+}
