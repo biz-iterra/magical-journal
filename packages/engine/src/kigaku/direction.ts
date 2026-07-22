@@ -249,6 +249,9 @@ export const kigakuDirectionModule: DiagnosisModule = {
     yearDirections: DirectionResult[];
     monthDirections: DirectionResult[];
   } {
+    if (!masters) {
+      throw new Error("kigaku_direction requires CalendarProvider as masters");
+    }
     const calendar = masters as CalendarProvider;
     const honmeiStar = computeHonmeiStar(inputs.birthDate, calendar);
     const getsumeiStar = computeGetsumeiStar(

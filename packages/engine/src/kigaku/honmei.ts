@@ -192,6 +192,9 @@ export const kigakuProfileModule: DiagnosisModule = {
     honmeiStar: StarNumber;
     getsumeiStar: StarNumber;
   } {
+    if (!masters) {
+      throw new Error("kigaku_profile requires CalendarProvider as masters");
+    }
     const calendar = masters as CalendarProvider;
     const honmeiStar = computeHonmeiStar(inputs.birthDate, calendar);
     const getsumeiStar = computeGetsumeiStar(

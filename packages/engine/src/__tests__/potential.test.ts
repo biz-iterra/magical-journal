@@ -72,6 +72,11 @@ describe("computePotentialValue", () => {
     expect(computePotentialValue("1920-03-01")).toBe(1);
   });
 
+  it("算出値59の境界確認: 1920-02-28 → 経過日数58 → 算出値59", () => {
+    // (58 + 1) % 60 = 59
+    expect(computePotentialValue("1920-02-28")).toBe(59);
+  });
+
   it("算出値は常に 0〜59 の範囲である", () => {
     // 各種日付でテスト
     const dates = [
