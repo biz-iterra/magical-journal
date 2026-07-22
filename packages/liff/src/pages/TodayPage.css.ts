@@ -252,3 +252,9 @@ export const registerLink = style({
     backgroundColor: "#4f46e5",
   },
 });
+
+// ── 方位マップ ──────────────────────────────────────────────
+
+export const mapSection = style({
+  marginTop: "16px",
+});

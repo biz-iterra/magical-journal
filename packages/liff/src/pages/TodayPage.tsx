@@ -2,6 +2,7 @@ import type { Direction8, DirectionFortune, MisfortuneType, StarNumber } from "@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
+import { DirectionMap } from "../components/direction-map";
 import * as s from "./TodayPage.css";
 
 // ── 定数 ─────────────────────────────────────────────────
@@ -64,6 +65,7 @@ interface TodayResponse {
   date: string;
   honmeiStar: StarNumber;
   getsumeiStar: StarNumber;
+  homeLatLng: { lat: number; lng: number } | null;
   dayBan: {
     center: StarNumber;
     positions: Record<Direction8, StarNumber>;
@@ -218,6 +220,13 @@ export function TodayPage() {
 
       {/* 方位グリッド */}
       <DirectionGrid directions={directions} />
+
+      {/* 方位マップ */}
+      {data.homeLatLng && (
+        <div className={s.mapSection}>
+          <DirectionMap center={data.homeLatLng} directions={directions} />
+        </div>
+      )}
     </div>
   );
 }

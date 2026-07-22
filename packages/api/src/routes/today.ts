@@ -63,6 +63,8 @@ today.get("/", (c) => {
     date: dateStr,
     honmeiStar,
     getsumeiStar,
+    homeLatLng:
+      prof.lat != null && prof.lng != null ? { lat: prof.lat as number, lng: prof.lng as number } : null,
     dayBan: {
       center: dayBan.center,
       positions: dayBan.positions,
