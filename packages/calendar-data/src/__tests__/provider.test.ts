@@ -175,22 +175,31 @@ describe("月の十二支 (getMonthJunishi)", () => {
 
 // ── 日の十二支 ──────────────────────────────────────────────
 
-describe("日の十二支 (getDayJunishi)", () => {
-  it("基準日 1924-02-05(甲子) → 子(0)", () => {
-    expect(getDayJunishi("1924-02-05")).toBe(0);
+describe("日の十二支 (getDayJunishi) — yakumoin.info 検証", () => {
+  it("2026-06-19(甲子) → 子(0)", () => {
+    expect(getDayJunishi("2026-06-19")).toBe(0);
   });
 
-  it("1924-02-06(乙丑) → 丑(1)", () => {
-    expect(getDayJunishi("1924-02-06")).toBe(1);
+  it("2026-06-20(乙丑) → 丑(1)", () => {
+    expect(getDayJunishi("2026-06-20")).toBe(1);
   });
 
-  it("12日後 1924-02-17 → 子(0)に戻る", () => {
-    expect(getDayJunishi("1924-02-17")).toBe(0);
+  it("2026-07-01(丙子) → 子(0)、12日周期の確認", () => {
+    expect(getDayJunishi("2026-07-01")).toBe(0);
   });
 
-  it("基準日より前の日付でも正しく計算される", () => {
-    // 1924-02-04 は基準日の前日 → 亥(11)
-    expect(getDayJunishi("1924-02-04")).toBe(11);
+  it("2026-07-22(丁酉) → 酉(9)", () => {
+    expect(getDayJunishi("2026-07-22")).toBe(9);
+  });
+
+  it("前日は亥(11)", () => {
+    expect(getDayJunishi("2026-06-18")).toBe(11);
+  });
+
+  it("基準日より遠い過去でも正しく計算される", () => {
+    // 2026-06-19 から 60 日前 = 2026-04-20
+    // 60 % 12 = 0 なので同じ十二支(子)
+    expect(getDayJunishi("2026-04-20")).toBe(0);
   });
 });
 
@@ -269,8 +278,10 @@ describe("CalendarProvider としての整合性", () => {
   });
 
   it("getDayJunishi は CalendarProvider 経由で正しい値を返す", () => {
-    // 基準日の十二支が子(0)であることを再確認
-    expect(provider.getDayJunishi("1924-02-05")).toBe(0);
+    // yakumoin.info 確認済み: 2026-06-19 = 甲子(子=0)
+    expect(provider.getDayJunishi("2026-06-19")).toBe(0);
+    // 2026-07-22 = 丁酉(酉=9)
+    expect(provider.getDayJunishi("2026-07-22")).toBe(9);
   });
 });
 

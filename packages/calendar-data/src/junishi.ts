@@ -27,9 +27,10 @@ function parseDate(dateStr: string): [number, number, number] {
   return [Number(parts[0]), Number(parts[1]), Number(parts[2])];
 }
 
-// ── 基準日(甲子) ──────────────────────────────────────────
-// 1924-02-05 = 甲子の日(六十干支の第1番、十二支=子(0))
-const KOSHI_BASE_JD = toJulianDay(1924, 2, 5);
+// ── 基準日(子の日) ────────────────────────────────────────
+// yakumoin.info で 2026-06-19 = 甲子(十二支=子=0)を確認。
+// 旧基準 1924-02-05 は実際には甲寅(十二支=寅=2)で2日ずれていた。
+const NE_BASE_JD = toJulianDay(2026, 6, 19);
 
 // ── 年の十二支 ────────────────────────────────────────────
 
@@ -67,12 +68,12 @@ export function getMonthJunishi(kigakuMonth: number): number {
  * @param date "YYYY-MM-DD" 形式の日付
  * @returns 十二支番号(0=子〜11=亥)
  *
- * 基準: 1924-02-05 = 甲子(子=0)
+ * 基準: 2026-06-19 = 甲子(子=0)、yakumoin.info 確認済み
  * 十二支は 12 日周期で循環する。
  */
 export function getDayJunishi(date: string): number {
   const [year, month, day] = parseDate(date);
   const jd = toJulianDay(year, month, day);
-  const diff = jd - KOSHI_BASE_JD;
+  const diff = jd - NE_BASE_JD;
   return ((diff % 12) + 12) % 12;
 }
