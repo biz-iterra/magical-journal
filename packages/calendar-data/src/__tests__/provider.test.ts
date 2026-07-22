@@ -229,10 +229,11 @@ describe("盤の構造", () => {
     expect(ban.positions.S).toBe(9);
   });
 
-  it("getDayBan は未実装エラーを投げる", () => {
-    expect(() => provider.getDayBan("2026-01-01")).toThrow(
-      "Day ban data not yet generated",
-    );
+  it("getDayBan が正しい盤を返す (2026-07-22 = 三碧中宮)", () => {
+    const ban = provider.getDayBan("2026-07-22");
+    expect(ban.center).toBe(3);
+    const expected = buildBan(3 as StarNumber);
+    expect(ban).toEqual(expected);
   });
 });
 

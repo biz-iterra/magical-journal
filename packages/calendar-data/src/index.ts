@@ -9,3 +9,5 @@ export {
   getDayJunishi,
 } from "./junishi.js";
 export { SEKKI_DATA } from "./sekki-data.js";
+export { getDayCenterStar, getTransitionDates } from "./day-ban.js";
+export type { YoutonIntonTransition } from "./day-ban.js";

@@ -4,7 +4,7 @@
  * 節入りデータ(sekki-data.ts)を参照して気学上の年・月を解決し、
  * 年盤・月盤を buildBan で構築する。
  *
- * 日盤は未実装(生成スクリプトの完成後に追加)。
+ * 日盤は陽遁/陰遁サイクルで中宮星を算出(day-ban.ts)。
  */
 
 import type {
@@ -18,6 +18,7 @@ import { buildBan } from "@mj/engine";
 import { SEKKI_DATA } from "./sekki-data.js";
 import { getDayJunishi, getMonthJunishi, getYearJunishi } from "./junishi.js";
 import { getMonthCenterStar, getYearCenterStar } from "./year-month-ban.js";
+import { getDayCenterStar } from "./day-ban.js";
 
 /**
  * マスタデータベースの CalendarProvider。
@@ -25,7 +26,7 @@ import { getMonthCenterStar, getYearCenterStar } from "./year-month-ban.js";
  * - 節入り: sekki-data.ts の静的テーブルから取得
  * - 年盤・月盤: 算出式(year-month-ban.ts)で中宮星を求め、buildBan で構築
  * - 十二支: 算出式(junishi.ts)
- * - 日盤: 未実装(NotImplementedError)
+ * - 日盤: 陽遁/陰遁サイクルによる中宮星算出(day-ban.ts) + buildBan
  */
 export class MasterCalendarProvider implements CalendarProvider {
   // ── CalendarProvider インターフェース ──────────────────
@@ -51,10 +52,9 @@ export class MasterCalendarProvider implements CalendarProvider {
     return buildBan(center);
   }
 
-  getDayBan(_date: string): Ban {
-    throw new Error(
-      "Day ban data not yet generated. Run the day-ban generation script first.",
-    );
+  getDayBan(date: string): Ban {
+    const center = getDayCenterStar(date);
+    return buildBan(center);
   }
 
   getYearJunishi(year: number): number {
