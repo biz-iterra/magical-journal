@@ -9,6 +9,7 @@ dist/
 .env
 .env.*
 !.env.example
+!infra/.env.nas
 
 # Database
 *.sqlite
