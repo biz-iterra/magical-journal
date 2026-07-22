@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { computeDestiny, destinyModule } from "../numerology/destiny.js";
 import { computeLifepath, lifepathModule } from "../numerology/lifepath.js";
 import { kanaToHepburn } from "../numerology/romaji.js";
-import { computeDestiny, destinyModule } from "../numerology/destiny.js";
 
 // ── ライフパスナンバー ────────────────────────────────────────
 
@@ -20,9 +20,7 @@ describe("computeLifepath", () => {
 
   it("マスターナンバー還元フラグ OFF 時は 11→2", () => {
     // 1980-02-09 → 合計29 → 11 → マスターナンバーOFFなので 1+1=2
-    expect(
-      computeLifepath("1980-02-09", { masterNumberEnabled: false }),
-    ).toBe(2);
+    expect(computeLifepath("1980-02-09", { masterNumberEnabled: false })).toBe(2);
   });
 
   it("合計が33になるケース → 33(マスターナンバー)", () => {
@@ -55,9 +53,7 @@ describe("computeLifepath", () => {
   });
 
   it("マスターナンバー還元フラグ OFF 時、33→6", () => {
-    expect(
-      computeLifepath("1956-09-03", { masterNumberEnabled: false }),
-    ).toBe(6);
+    expect(computeLifepath("1956-09-03", { masterNumberEnabled: false })).toBe(6);
   });
 
   it("合計が22になるケース → 22(マスターナンバー)", () => {
@@ -200,9 +196,32 @@ describe("computeDestiny", () => {
     //              J(1)K(2)L(3)M(4)N(5)O(6)P(7)Q(8)R(9)
     //              S(1)T(2)U(3)V(4)W(5)X(6)Y(7)Z(8)
     const expected: Record<string, number> = {
-      A: 1, B: 2, C: 3, D: 4, E: 5, F: 6, G: 7, H: 8, I: 9,
-      J: 1, K: 2, L: 3, M: 4, N: 5, O: 6, P: 7, Q: 8, R: 9,
-      S: 1, T: 2, U: 3, V: 4, W: 5, X: 6, Y: 7, Z: 8,
+      A: 1,
+      B: 2,
+      C: 3,
+      D: 4,
+      E: 5,
+      F: 6,
+      G: 7,
+      H: 8,
+      I: 9,
+      J: 1,
+      K: 2,
+      L: 3,
+      M: 4,
+      N: 5,
+      O: 6,
+      P: 7,
+      Q: 8,
+      R: 9,
+      S: 1,
+      T: 2,
+      U: 3,
+      V: 4,
+      W: 5,
+      X: 6,
+      Y: 7,
+      Z: 8,
     };
     for (const [letter, value] of Object.entries(expected)) {
       // 1文字だけなので還元の必要なし(1〜9はそのまま)

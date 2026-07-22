@@ -37,10 +37,7 @@ export function starToGogyo(star: StarNumber): GogyoElement {
  * @param birthDate "YYYY-MM-DD" 形式
  * @param calendar CalendarProvider
  */
-export function computeHonmeiStar(
-  birthDate: string,
-  calendar: CalendarProvider,
-): StarNumber {
+export function computeHonmeiStar(birthDate: string, calendar: CalendarProvider): StarNumber {
   const year = getKigakuYear(birthDate, calendar);
   return yearToStar(year);
 }
@@ -61,10 +58,7 @@ function yearToStar(year: number): StarNumber {
  * 生年月日から気学上の年を返す。
  * 立春(月=2 の節入り日)より前なら前年扱い。
  */
-function getKigakuYear(
-  birthDate: string,
-  calendar: CalendarProvider,
-): number {
+function getKigakuYear(birthDate: string, calendar: CalendarProvider): number {
   const parts = birthDate.split("-");
   const calendarYear = Number(parts[0]);
 
@@ -106,10 +100,7 @@ function getGetsumeiKiten(honmeiStar: StarNumber): StarNumber {
  *
  * ただし、年をまたぐ場合(1月生まれなど)は前年の小寒〜当年の立春前を考慮する。
  */
-function getKigakuMonth(
-  birthDate: string,
-  calendar: CalendarProvider,
-): number {
+function getKigakuMonth(birthDate: string, calendar: CalendarProvider): number {
   const parts = birthDate.split("-");
   const calendarYear = Number(parts[0]);
 
@@ -135,7 +126,9 @@ function getKigakuMonth(
   // すべての境界より前(=当年の小寒(1月)より前)
   // 前年の境界を参照して判定する
   const prevBoundaries = calendar.getSekkiriBoundaries(calendarYear - 1);
-  const prevSorted = [...prevBoundaries].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const prevSorted = [...prevBoundaries].sort((a, b) =>
+    a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+  );
 
   for (let i = prevSorted.length - 1; i >= 0; i--) {
     const boundary = prevSorted[i]!;
@@ -145,9 +138,7 @@ function getKigakuMonth(
   }
 
   // ここに到達することはないはずだが、安全のためエラー
-  throw new Error(
-    `CalendarProvider: could not determine kigaku month for ${birthDate}`,
-  );
+  throw new Error(`CalendarProvider: could not determine kigaku month for ${birthDate}`);
 }
 
 /**
@@ -176,7 +167,7 @@ export function computeGetsumeiStar(
   }
 
   // 月命星 = ((起点 - 経過月数 - 1) % 9 + 9) % 9 + 1
-  const star = (((kiten - elapsed - 1) % 9) + 9) % 9 + 1;
+  const star = ((((kiten - elapsed - 1) % 9) + 9) % 9) + 1;
   return star as StarNumber;
 }
 
@@ -188,7 +179,10 @@ export const kigakuProfileModule: DiagnosisModule = {
   requiredInputs: ["birth_date"],
   optionalInputs: [],
   clientSafe: true,
-  compute(inputs: ProfileInputs, masters?: unknown): {
+  compute(
+    inputs: ProfileInputs,
+    masters?: unknown,
+  ): {
     honmeiStar: StarNumber;
     getsumeiStar: StarNumber;
   } {
@@ -197,11 +191,7 @@ export const kigakuProfileModule: DiagnosisModule = {
     }
     const calendar = masters as CalendarProvider;
     const honmeiStar = computeHonmeiStar(inputs.birthDate, calendar);
-    const getsumeiStar = computeGetsumeiStar(
-      honmeiStar,
-      inputs.birthDate,
-      calendar,
-    );
+    const getsumeiStar = computeGetsumeiStar(honmeiStar, inputs.birthDate, calendar);
     return { honmeiStar, getsumeiStar };
   },
 };

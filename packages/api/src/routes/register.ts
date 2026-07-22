@@ -1,0 +1,99 @@
+/**
+ * POST /api/register
+ *
+ * ユーザー登録:
+ * 1. users + profiles を INSERT
+ * 2. enabled モジュール全実行 → diag_results を保存
+ * 3. 201 を返す
+ */
+
+import { MasterCalendarProvider } from "@mj/calendar-data";
+import type { ProfileInputs } from "@mj/engine";
+import { Hono } from "hono";
+import { getDb } from "../db/connection.js";
+import { createProfile, createUser, getUserByLineId, saveDiagResult } from "../db/queries.js";
+import { createRegistry } from "../registry-setup.js";
+import type { AppEnv, RegisterBody } from "../types.js";
+
+const register = new Hono<AppEnv>();
+
+register.post("/", async (c) => {
+  const lineUserId = c.get("lineUserId");
+
+  // 既存ユーザーチェック
+  const existing = getUserByLineId(lineUserId);
+  if (existing) {
+    return c.json({ error: "User already registered" }, 409);
+  }
+
+  // リクエストボディの検証
+  const body = await c.req.json<RegisterBody>();
+
+  if (!body.birthDate || !body.nameKana || !body.nameRomaji || !body.charStyle) {
+    return c.json({ error: "birthDate, nameKana, nameRomaji, charStyle are required" }, 400);
+  }
+
+  if (body.charStyle !== "male" && body.charStyle !== "female") {
+    return c.json({ error: "charStyle must be 'male' or 'female'" }, 400);
+  }
+
+  // 日付形式の簡易チェック
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(body.birthDate)) {
+    return c.json({ error: "birthDate must be YYYY-MM-DD format" }, 400);
+  }
+
+  // 出生時刻の簡易チェック
+  if (body.birthTime !== undefined && !/^\d{2}:\d{2}$/.test(body.birthTime)) {
+    return c.json({ error: "birthTime must be HH:MM format" }, 400);
+  }
+
+  // トランザクションで一括処理
+  const db = getDb();
+  const transaction = db.transaction(() => {
+    // 1. ユーザー作成
+    const user = createUser(lineUserId, null, true);
+
+    // 2. プロフィール作成
+    createProfile(user.id, {
+      birthDate: body.birthDate,
+      birthTime: body.birthTime,
+      nameKana: body.nameKana,
+      nameRomaji: body.nameRomaji,
+      addressText: body.addressText,
+      lat: body.lat,
+      lng: body.lng,
+      charStyle: body.charStyle,
+    });
+
+    // 3. 全 enabled モジュール実行
+    const registry = createRegistry();
+    const calendar = new MasterCalendarProvider();
+
+    const inputs: ProfileInputs = {
+      birthDate: body.birthDate,
+      birthTime: body.birthTime,
+      nameKana: body.nameKana,
+      nameRomaji: body.nameRomaji,
+      homeLat: body.lat,
+      homeLng: body.lng,
+    };
+
+    const results = registry.computeAll(inputs, calendar);
+
+    // 4. 診断結果を保存
+    for (const [moduleId, result] of results) {
+      const moduleReg = registry.getModule(moduleId);
+      if (moduleReg) {
+        saveDiagResult(user.id, moduleId, moduleReg.module.version, JSON.stringify(result));
+      }
+    }
+
+    return user;
+  });
+
+  const user = transaction();
+
+  return c.json({ message: "Registration successful", userId: user.id }, 201);
+});
+
+export default register;

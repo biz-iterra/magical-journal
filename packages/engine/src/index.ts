@@ -40,9 +40,20 @@ export { kanaToHepburn } from "./numerology/romaji.js";
 export { computeDestiny, destinyModule } from "./numerology/destiny.js";
 
 // kigaku
-export { computeHonmeiStar, computeGetsumeiStar, starToGogyo, kigakuProfileModule } from "./kigaku/honmei.js";
+export {
+  computeHonmeiStar,
+  computeGetsumeiStar,
+  starToGogyo,
+  kigakuProfileModule,
+} from "./kigaku/honmei.js";
 export { buildBan, getOppositeDirection, JYOUI_POSITIONS } from "./kigaku/ban.js";
-export { judgeDirections, isShojo, isBiwa, isSokoku, kigakuDirectionModule } from "./kigaku/direction.js";
+export {
+  judgeDirections,
+  isShojo,
+  isBiwa,
+  isSokoku,
+  kigakuDirectionModule,
+} from "./kigaku/direction.js";
 
 // mapping
 export type { CharacterInfo } from "./mapping.js";

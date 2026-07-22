@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "liff-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@mj/liff", "dev"],
+      "port": 5173
+    }
+  ]
+}

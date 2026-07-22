@@ -4,9 +4,7 @@ import type { DiagnosisModule, InputKey, ProfileInputs } from "../types.js";
 
 // ── テスト用ヘルパー ──
 
-function createModule(
-  overrides: Partial<DiagnosisModule> & { id: string },
-): DiagnosisModule {
+function createModule(overrides: Partial<DiagnosisModule> & { id: string }): DiagnosisModule {
   return {
     version: 1,
     requiredInputs: ["birth_date"] as readonly InputKey[],
@@ -36,7 +34,7 @@ describe("DiagnosisRegistry", () => {
 
     const enabled = registry.getEnabled();
     expect(enabled).toHaveLength(1);
-    expect(enabled[0]!.id).toBe("a");
+    expect(enabled[0]?.id).toBe("a");
   });
 
   it("held モジュールが getEnabled / getClientSafe / computeAll に含まれない", () => {
@@ -69,7 +67,7 @@ describe("DiagnosisRegistry", () => {
 
     const safe = registry.getClientSafe();
     expect(safe).toHaveLength(1);
-    expect(safe[0]!.id).toBe("zodiac");
+    expect(safe[0]?.id).toBe("zodiac");
   });
 
   it("getRequiredInputs が enabled モジュールの要求入力の和集合を返す", () => {
@@ -93,9 +91,7 @@ describe("DiagnosisRegistry", () => {
     registry.register(modC, "held", 3);
 
     const required = registry.getRequiredInputs();
-    expect(required).toEqual(
-      new Set(["birth_date", "birth_time", "name_kana"]),
-    );
+    expect(required).toEqual(new Set(["birth_date", "birth_time", "name_kana"]));
     // held モジュールの name_kanji は含まれない
     expect(required.has("name_kanji")).toBe(false);
   });
@@ -181,9 +177,9 @@ describe("DiagnosisRegistry", () => {
 
     const reg = registry.getModule("numerology_lifepath");
     expect(reg).toBeDefined();
-    expect(reg!.module.id).toBe("numerology_lifepath");
-    expect(reg!.status).toBe("enabled");
-    expect(reg!.displayOrder).toBe(5);
+    expect(reg?.module.id).toBe("numerology_lifepath");
+    expect(reg?.status).toBe("enabled");
+    expect(reg?.displayOrder).toBe(5);
   });
 
   it("getModule で未登録の id は undefined を返す", () => {

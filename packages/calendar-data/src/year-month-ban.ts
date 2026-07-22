@@ -52,15 +52,12 @@ function getMonthKiten(yearStar: StarNumber): StarNumber {
  * @param kigakuYear 気学上の年(立春区切り)
  * @param kigakuMonth 気学上の月(1〜12)
  */
-export function getMonthCenterStar(
-  kigakuYear: number,
-  kigakuMonth: number,
-): StarNumber {
+export function getMonthCenterStar(kigakuYear: number, kigakuMonth: number): StarNumber {
   const yearStar = getYearCenterStar(kigakuYear);
   const base = getMonthKiten(yearStar);
 
   // 寅月(2)からの経過月数
   const monthsFromTiger = (((kigakuMonth - 2) % 12) + 12) % 12;
-  const star = (((base - monthsFromTiger - 1) % 9) + 9) % 9 + 1;
+  const star = ((((base - monthsFromTiger - 1) % 9) + 9) % 9) + 1;
   return star as StarNumber;
 }

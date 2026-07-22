@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import type { StarNumber } from "@mj/engine";
+import { describe, expect, it } from "vitest";
 
 import { getDayCenterStar, getTransitionDates } from "../day-ban.js";
 
@@ -192,10 +192,16 @@ describe("日盤中宮星 (getDayCenterStar) — yakumoin.info 2026年検証", (
 describe("中宮星の範囲", () => {
   it("任意の日付で 1〜9 の範囲に収まる", () => {
     const dates = [
-      "2024-01-01", "2024-06-15", "2024-12-31",
-      "2025-03-20", "2025-09-23",
-      "2026-01-01", "2026-07-22", "2026-12-31",
-      "2027-02-04", "2027-08-15",
+      "2024-01-01",
+      "2024-06-15",
+      "2024-12-31",
+      "2025-03-20",
+      "2025-09-23",
+      "2026-01-01",
+      "2026-07-22",
+      "2026-12-31",
+      "2027-02-04",
+      "2027-08-15",
     ];
     for (const d of dates) {
       const star = getDayCenterStar(d);

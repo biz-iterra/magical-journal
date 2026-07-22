@@ -1,10 +1,6 @@
-import type {
-  DiagnosisModule,
-  NumerologyNumber,
-  ProfileInputs,
-} from "../types.js";
 import type { EngineConfig } from "../config.js";
 import { DEFAULT_CONFIG } from "../config.js";
+import type { DiagnosisModule, NumerologyNumber, ProfileInputs } from "../types.js";
 
 /** マスターナンバーの集合 */
 const MASTER_NUMBERS: ReadonlySet<number> = new Set([11, 22, 33]);
@@ -28,10 +24,7 @@ function digitSum(n: number): number {
  * masterNumberEnabled=true の場合、11/22/33 で停止する。
  * masterNumberEnabled=false の場合、1桁になるまで還元する。
  */
-function reduceToNumerology(
-  total: number,
-  masterNumberEnabled: boolean,
-): NumerologyNumber {
+function reduceToNumerology(total: number, masterNumberEnabled: boolean): NumerologyNumber {
   let current = total;
   while (current > 9) {
     if (masterNumberEnabled && MASTER_NUMBERS.has(current)) {
@@ -57,8 +50,7 @@ export function computeLifepath(
   birthDate: string,
   config?: Partial<Pick<EngineConfig, "masterNumberEnabled" | "lifepathMethod">>,
 ): NumerologyNumber {
-  const masterNumberEnabled =
-    config?.masterNumberEnabled ?? DEFAULT_CONFIG.masterNumberEnabled;
+  const masterNumberEnabled = config?.masterNumberEnabled ?? DEFAULT_CONFIG.masterNumberEnabled;
 
   // YYYY-MM-DD からハイフンを除去し、各桁を合計
   const digits = birthDate.replace(/-/g, "");

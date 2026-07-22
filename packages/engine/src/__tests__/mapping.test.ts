@@ -1,15 +1,20 @@
 import { describe, expect, it } from "vitest";
-import {
-  CHARACTER_MAP,
-  getCharacter,
-  getCharacterName,
-} from "../mapping.js";
+import { CHARACTER_MAP, getCharacter, getCharacterName } from "../mapping.js";
 import type { PotentialTypeId } from "../types.js";
 
 const ALL_TYPE_IDS: PotentialTypeId[] = [
-  "IR+", "IR-", "IL+", "IL-",
-  "ER+", "ER-", "EL+", "EL-",
-  "PR+", "PR-", "PL+", "PL-",
+  "IR+",
+  "IR-",
+  "IL+",
+  "IL-",
+  "ER+",
+  "ER-",
+  "EL+",
+  "EL-",
+  "PR+",
+  "PR-",
+  "PL+",
+  "PL-",
 ];
 
 // ── CHARACTER_MAP ──
@@ -69,32 +74,24 @@ describe("getCharacter", () => {
   });
 
   it("存在しないタイプ ID でエラーが投げられる", () => {
-    expect(() => getCharacter("XX+" as PotentialTypeId)).toThrow(
-      "Unknown PotentialTypeId: XX+",
-    );
+    expect(() => getCharacter("XX+" as PotentialTypeId)).toThrow("Unknown PotentialTypeId: XX+");
   });
 });
 
 // ── getCharacterName ──
 
 describe("getCharacterName", () => {
-  it.each(ALL_TYPE_IDS)(
-    "タイプ %s の male バリアントが返る",
-    (typeId) => {
-      const name = getCharacterName(typeId, "male");
-      expect(name).toBeTruthy();
-      expect(name).toBe(getCharacter(typeId).characterMale);
-    },
-  );
+  it.each(ALL_TYPE_IDS)("タイプ %s の male バリアントが返る", (typeId) => {
+    const name = getCharacterName(typeId, "male");
+    expect(name).toBeTruthy();
+    expect(name).toBe(getCharacter(typeId).characterMale);
+  });
 
-  it.each(ALL_TYPE_IDS)(
-    "タイプ %s の female バリアントが返る",
-    (typeId) => {
-      const name = getCharacterName(typeId, "female");
-      expect(name).toBeTruthy();
-      expect(name).toBe(getCharacter(typeId).characterFemale);
-    },
-  );
+  it.each(ALL_TYPE_IDS)("タイプ %s の female バリアントが返る", (typeId) => {
+    const name = getCharacterName(typeId, "female");
+    expect(name).toBeTruthy();
+    expect(name).toBe(getCharacter(typeId).characterFemale);
+  });
 
   // CSV データとの具体値照合
   const sampleCases: [PotentialTypeId, "male" | "female", string][] = [
@@ -124,12 +121,9 @@ describe("getCharacterName", () => {
     ["PL-", "female", "イワミ"],
   ];
 
-  it.each(sampleCases)(
-    "%s (%s) -> %s",
-    (typeId, style, expected) => {
-      expect(getCharacterName(typeId, style)).toBe(expected);
-    },
-  );
+  it.each(sampleCases)("%s (%s) -> %s", (typeId, style, expected) => {
+    expect(getCharacterName(typeId, style)).toBe(expected);
+  });
 
   it("存在しないタイプ ID でエラーが投げられる", () => {
     expect(() => getCharacterName("ZZ-" as PotentialTypeId, "male")).toThrow(

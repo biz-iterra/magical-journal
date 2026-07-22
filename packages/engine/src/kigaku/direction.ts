@@ -1,3 +1,5 @@
+import type { EngineConfig } from "../config.js";
+import { DEFAULT_CONFIG } from "../config.js";
 import type {
   Ban,
   CalendarProvider,
@@ -10,16 +12,12 @@ import type {
   ProfileInputs,
   StarNumber,
 } from "../types.js";
-import type { EngineConfig } from "../config.js";
-import { DEFAULT_CONFIG } from "../config.js";
-import { buildBan, getOppositeDirection, JYOUI_POSITIONS } from "./ban.js";
+import { JYOUI_POSITIONS, buildBan, getOppositeDirection } from "./ban.js";
 import { computeGetsumeiStar, computeHonmeiStar, starToGogyo } from "./honmei.js";
 
 // ── 全方位リスト ────────────────────────────────────────────
 
-const ALL_DIRECTIONS: readonly Direction8[] = [
-  "N", "NE", "E", "SE", "S", "SW", "W", "NW",
-];
+const ALL_DIRECTIONS: readonly Direction8[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
 // ── 十二支→方位の対応 ───────────────────────────────────────
 
@@ -28,18 +26,18 @@ const ALL_DIRECTIONS: readonly Direction8[] = [
  * 破はこの方位の反対に発生する。
  */
 const JUNISHI_DIRECTION: Readonly<Record<number, Direction8>> = {
-  0: "N",    // 子
-  1: "NE",   // 丑
-  2: "NE",   // 寅
-  3: "E",    // 卯
-  4: "SE",   // 辰
-  5: "SE",   // 巳
-  6: "S",    // 午
-  7: "SW",   // 未
-  8: "SW",   // 申
-  9: "W",    // 酉
-  10: "NW",  // 戌
-  11: "NW",  // 亥
+  0: "N", // 子
+  1: "NE", // 丑
+  2: "NE", // 寅
+  3: "E", // 卯
+  4: "SE", // 辰
+  5: "SE", // 巳
+  6: "S", // 午
+  7: "SW", // 未
+  8: "SW", // 申
+  9: "W", // 酉
+  10: "NW", // 戌
+  11: "NW", // 亥
 };
 
 // ── 五行関係の判定 ──────────────────────────────────────────
@@ -183,13 +181,7 @@ export function judgeDirections(
     if (getsumeiTekisatsuDir === dir) misfortunes.push("getsumei_tekisatsu");
 
     // fortune の決定
-    const fortune = determineFortune(
-      star,
-      honmeiStar,
-      getsumeiStar,
-      misfortunes,
-      cfg,
-    );
+    const fortune = determineFortune(star, honmeiStar, getsumeiStar, misfortunes, cfg);
 
     results.push({ direction: dir, star, fortune, misfortunes });
   }
@@ -245,7 +237,10 @@ export const kigakuDirectionModule: DiagnosisModule = {
   requiredInputs: ["birth_date", "home_latlng"],
   optionalInputs: [],
   clientSafe: false,
-  compute(inputs: ProfileInputs, masters?: unknown): {
+  compute(
+    inputs: ProfileInputs,
+    masters?: unknown,
+  ): {
     yearDirections: DirectionResult[];
     monthDirections: DirectionResult[];
   } {
@@ -254,11 +249,7 @@ export const kigakuDirectionModule: DiagnosisModule = {
     }
     const calendar = masters as CalendarProvider;
     const honmeiStar = computeHonmeiStar(inputs.birthDate, calendar);
-    const getsumeiStar = computeGetsumeiStar(
-      honmeiStar,
-      inputs.birthDate,
-      calendar,
-    );
+    const getsumeiStar = computeGetsumeiStar(honmeiStar, inputs.birthDate, calendar);
 
     // 現在の日付が必要だが、DiagnosisModule の compute は日付引数を持たない。
     // ここでは birthDate の年の年盤・月盤で判定する(実際の運用では
@@ -273,18 +264,8 @@ export const kigakuDirectionModule: DiagnosisModule = {
     const yearJunishi = calendar.getYearJunishi(year);
     const monthJunishi = calendar.getMonthJunishi(year, month);
 
-    const yearDirections = judgeDirections(
-      yearBan,
-      honmeiStar,
-      getsumeiStar,
-      yearJunishi,
-    );
-    const monthDirections = judgeDirections(
-      monthBan,
-      honmeiStar,
-      getsumeiStar,
-      monthJunishi,
-    );
+    const yearDirections = judgeDirections(yearBan, honmeiStar, getsumeiStar, yearJunishi);
+    const monthDirections = judgeDirections(monthBan, honmeiStar, getsumeiStar, monthJunishi);
 
     return { yearDirections, monthDirections };
   },

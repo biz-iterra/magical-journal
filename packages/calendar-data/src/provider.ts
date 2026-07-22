@@ -7,18 +7,13 @@
  * 日盤は陽遁/陰遁サイクルで中宮星を算出(day-ban.ts)。
  */
 
-import type {
-  Ban,
-  CalendarProvider,
-  SekkiriBoundary,
-  StarNumber,
-} from "@mj/engine";
+import type { Ban, CalendarProvider, SekkiriBoundary, StarNumber } from "@mj/engine";
 import { buildBan } from "@mj/engine";
 
-import { SEKKI_DATA } from "./sekki-data.js";
-import { getDayJunishi, getMonthJunishi, getYearJunishi } from "./junishi.js";
-import { getMonthCenterStar, getYearCenterStar } from "./year-month-ban.js";
 import { getDayCenterStar } from "./day-ban.js";
+import { getDayJunishi, getMonthJunishi, getYearJunishi } from "./junishi.js";
+import { SEKKI_DATA } from "./sekki-data.js";
+import { getMonthCenterStar, getYearCenterStar } from "./year-month-ban.js";
 
 /**
  * マスタデータベースの CalendarProvider。
@@ -83,9 +78,7 @@ export class MasterCalendarProvider implements CalendarProvider {
     const risshun = boundaries.find((b) => b.month === 2);
 
     if (risshun === undefined) {
-      throw new Error(
-        `Risshun (month=2) boundary not found for year ${String(calendarYear)}.`,
-      );
+      throw new Error(`Risshun (month=2) boundary not found for year ${String(calendarYear)}.`);
     }
 
     if (date < risshun.date) {
@@ -105,9 +98,7 @@ export class MasterCalendarProvider implements CalendarProvider {
     const boundaries = this.getSekkiriBoundaries(calendarYear);
 
     // 日付順にソート
-    const sorted = [...boundaries].sort((a, b) =>
-      a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
-    );
+    const sorted = [...boundaries].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
     // 後ろから走査して date >= boundary.date の最初の境界を見つける
     for (let i = sorted.length - 1; i >= 0; i--) {
@@ -131,9 +122,7 @@ export class MasterCalendarProvider implements CalendarProvider {
       }
     }
 
-    throw new Error(
-      `Could not determine kigaku month for ${date}.`,
-    );
+    throw new Error(`Could not determine kigaku month for ${date}.`);
   }
 
   // ── 内部ヘルパー ──────────────────────────────────────

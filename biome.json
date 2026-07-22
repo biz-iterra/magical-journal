@@ -6,7 +6,10 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "style": {
+        "noNonNullAssertion": "warn"
+      }
     }
   },
   "formatter": {
@@ -21,6 +24,6 @@
     }
   },
   "files": {
-    "ignore": ["dist/", "node_modules/", "packages/calendar-data/generated/"]
+    "ignore": ["dist/", "node_modules/", "packages/calendar-data/generated/", ".claude/worktrees/"]
   }
 }

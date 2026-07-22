@@ -1,29 +1,19 @@
 import { describe, expect, it } from "vitest";
-import type {
-  Ban,
-  CalendarProvider,
-  Direction8,
-  SekkiriBoundary,
-  StarNumber,
-} from "../types.js";
+import { JYOUI_POSITIONS, buildBan, getOppositeDirection } from "../kigaku/ban.js";
 import {
-  computeHonmeiStar,
-  computeGetsumeiStar,
-  starToGogyo,
-  kigakuProfileModule,
-} from "../kigaku/honmei.js";
-import {
-  buildBan,
-  getOppositeDirection,
-  JYOUI_POSITIONS,
-} from "../kigaku/ban.js";
-import {
-  judgeDirections,
-  isShojo,
   isBiwa,
+  isShojo,
   isSokoku,
+  judgeDirections,
   kigakuDirectionModule,
 } from "../kigaku/direction.js";
+import {
+  computeGetsumeiStar,
+  computeHonmeiStar,
+  kigakuProfileModule,
+  starToGogyo,
+} from "../kigaku/honmei.js";
+import type { Ban, CalendarProvider, Direction8, SekkiriBoundary, StarNumber } from "../types.js";
 
 // ── CalendarProvider モック ──────────────────────────────────
 
@@ -31,23 +21,21 @@ import {
  * テスト用の CalendarProvider モック。
  * 節入り日は簡易的な固定値(年により +-1 日のずれがあるが、テストでは固定)。
  */
-function createMockCalendar(
-  overrides?: Partial<CalendarProvider>,
-): CalendarProvider {
+function createMockCalendar(overrides?: Partial<CalendarProvider>): CalendarProvider {
   return {
     getSekkiriBoundaries: (year: number): readonly SekkiriBoundary[] => [
-      { month: 2, date: `${String(year)}-02-04` },   // 立春
-      { month: 3, date: `${String(year)}-03-06` },   // 啓蟄
-      { month: 4, date: `${String(year)}-04-05` },   // 清明
-      { month: 5, date: `${String(year)}-05-06` },   // 立夏
-      { month: 6, date: `${String(year)}-06-06` },   // 芒種
-      { month: 7, date: `${String(year)}-07-07` },   // 小暑
-      { month: 8, date: `${String(year)}-08-08` },   // 立秋
-      { month: 9, date: `${String(year)}-09-08` },   // 白露
-      { month: 10, date: `${String(year)}-10-08` },  // 寒露
-      { month: 11, date: `${String(year)}-11-07` },  // 立冬
-      { month: 12, date: `${String(year)}-12-07` },  // 大雪
-      { month: 1, date: `${String(year)}-01-06` },   // 小寒
+      { month: 2, date: `${String(year)}-02-04` }, // 立春
+      { month: 3, date: `${String(year)}-03-06` }, // 啓蟄
+      { month: 4, date: `${String(year)}-04-05` }, // 清明
+      { month: 5, date: `${String(year)}-05-06` }, // 立夏
+      { month: 6, date: `${String(year)}-06-06` }, // 芒種
+      { month: 7, date: `${String(year)}-07-07` }, // 小暑
+      { month: 8, date: `${String(year)}-08-08` }, // 立秋
+      { month: 9, date: `${String(year)}-09-08` }, // 白露
+      { month: 10, date: `${String(year)}-10-08` }, // 寒露
+      { month: 11, date: `${String(year)}-11-07` }, // 立冬
+      { month: 12, date: `${String(year)}-12-07` }, // 大雪
+      { month: 1, date: `${String(year)}-01-06` }, // 小寒
     ],
     getYearBan: (year: number): Ban => {
       // 年の中宮星を計算(本命星と同じ計算式)
@@ -163,7 +151,7 @@ describe("computeGetsumeiStar", () => {
       10: 9, // 戌月(1の次は9に循環)
       11: 8, // 亥月
       12: 7, // 子月
-      1: 6,  // 丑月
+      1: 6, // 丑月
     };
 
     // 各月の中間日でテスト(2024年)
@@ -374,7 +362,7 @@ describe("judgeDirections", () => {
   it("五黄が特定方位にあるとき五黄殺と暗剣殺が正しく判定される", () => {
     // center=1 → 五黄(5)は南(S)に回座
     const ban = buildBan(1);
-    expect(ban.positions["S"]).toBe(5);
+    expect(ban.positions.S).toBe(5);
 
     const results = judgeDirections(ban, 9, 6, 0);
     const south = results.find((r) => r.direction === "S")!;
@@ -408,7 +396,7 @@ describe("judgeDirections", () => {
     // center=6 → NW=7, W=8, NE=9, S=1, N=2, SW=3, E=4, SE=5
     // 一白(1)は S に回座。定位=N の反対=S。S === S なので定位対冲!
     const ban = buildBan(6);
-    expect(ban.positions["S"]).toBe(1);
+    expect(ban.positions.S).toBe(1);
 
     const results = judgeDirections(ban, 3, 5, 0);
     const south = results.find((r) => r.direction === "S")!;
@@ -418,7 +406,7 @@ describe("judgeDirections", () => {
   it("定位対冲: 九紫(定位=南)が北に回座", () => {
     // center=4 → N=9 → 九紫の定位は南、反対は北。北に回座しているので対冲
     const ban = buildBan(4);
-    expect(ban.positions["N"]).toBe(9);
+    expect(ban.positions.N).toBe(9);
 
     const results = judgeDirections(ban, 1, 8, 6);
     const north = results.find((r) => r.direction === "N")!;
@@ -428,7 +416,7 @@ describe("judgeDirections", () => {
   it("本命殺・本命的殺が正しく判定される", () => {
     // center=5(五黄中宮、後天定位盤)、本命星=3 → 三碧は東(E)
     const ban = buildBan(5);
-    expect(ban.positions["E"]).toBe(3);
+    expect(ban.positions.E).toBe(3);
 
     const results = judgeDirections(ban, 3, 8, 0);
     const east = results.find((r) => r.direction === "E")!;
@@ -470,7 +458,7 @@ describe("judgeDirections", () => {
     // N に八白(8=土)が回座。本命星2(土)と比和。N は凶方位に該当しない。
     // → fortune
     const ban = buildBan(3);
-    expect(ban.positions["N"]).toBe(8);
+    expect(ban.positions.N).toBe(8);
 
     const results = judgeDirections(ban, 2, 3, 3);
     const north = results.find((r) => r.direction === "N")!;
@@ -536,10 +524,10 @@ describe("kigakuProfileModule", () => {
 
   it("compute が honmeiStar と getsumeiStar を返す", () => {
     const calendar = createMockCalendar();
-    const result = kigakuProfileModule.compute(
-      { birthDate: "1990-05-17" },
-      calendar,
-    ) as { honmeiStar: StarNumber; getsumeiStar: StarNumber };
+    const result = kigakuProfileModule.compute({ birthDate: "1990-05-17" }, calendar) as {
+      honmeiStar: StarNumber;
+      getsumeiStar: StarNumber;
+    };
     expect(result.honmeiStar).toBe(1);
     expect(result).toHaveProperty("getsumeiStar");
   });

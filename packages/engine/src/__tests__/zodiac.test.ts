@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeZodiac, zodiacModule } from "../zodiac.js";
 import type { ZodiacSign } from "../types.js";
+import { computeZodiac, zodiacModule } from "../zodiac.js";
 
 // ── computeZodiac 単体テスト ──
 

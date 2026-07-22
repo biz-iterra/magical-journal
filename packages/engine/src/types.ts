@@ -51,15 +51,15 @@ export type DirectionFortune = "great_fortune" | "fortune" | "neutral" | "misfor
 
 /** 凶方位の種類 */
 export type MisfortuneType =
-  | "goou_satsu"          // 五黄殺
-  | "anken_satsu"         // 暗剣殺
-  | "saiha"               // 歳破
-  | "geppa"               // 月破
-  | "nippa"               // 日破
-  | "jouiTaichu"          // 定位対冲
-  | "honmei_satsu"        // 本命殺
-  | "honmei_tekisatsu"    // 本命的殺
-  | "getsumei_satsu"      // 月命殺
+  | "goou_satsu" // 五黄殺
+  | "anken_satsu" // 暗剣殺
+  | "saiha" // 歳破
+  | "geppa" // 月破
+  | "nippa" // 日破
+  | "jouiTaichu" // 定位対冲
+  | "honmei_satsu" // 本命殺
+  | "honmei_tekisatsu" // 本命的殺
+  | "getsumei_satsu" // 月命殺
   | "getsumei_tekisatsu"; // 月命的殺
 
 /** 方位判定結果 */
@@ -74,9 +74,18 @@ export interface DirectionResult {
 
 /** 12タイプID */
 export type PotentialTypeId =
-  | "IR+" | "IR-" | "IL+" | "IL-"
-  | "ER+" | "ER-" | "EL+" | "EL-"
-  | "PR+" | "PR-" | "PL+" | "PL-";
+  | "IR+"
+  | "IR-"
+  | "IL+"
+  | "IL-"
+  | "ER+"
+  | "ER-"
+  | "EL+"
+  | "EL-"
+  | "PR+"
+  | "PR-"
+  | "PL+"
+  | "PL-";
 
 /** ポテンシャル算出結果 */
 export interface PotentialResult {
@@ -88,9 +97,18 @@ export interface PotentialResult {
 // ── 星座関連 ─────────────────────────────────────────────
 
 export type ZodiacSign =
-  | "aries" | "taurus" | "gemini" | "cancer"
-  | "leo" | "virgo" | "libra" | "scorpio"
-  | "sagittarius" | "capricorn" | "aquarius" | "pisces";
+  | "aries"
+  | "taurus"
+  | "gemini"
+  | "cancer"
+  | "leo"
+  | "virgo"
+  | "libra"
+  | "scorpio"
+  | "sagittarius"
+  | "capricorn"
+  | "aquarius"
+  | "pisces";
 
 // ── 数秘術関連 ───────────────────────────────────────────
 
@@ -100,8 +118,8 @@ export type NumerologyNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 11 | 22 | 33;
 // ── CalendarProvider(DI 境界) ───────────────────────────
 
 export interface SekkiriBoundary {
-  readonly month: number;   // 気学上の月(1〜12)
-  readonly date: string;    // 節入り日 "YYYY-MM-DD"
+  readonly month: number; // 気学上の月(1〜12)
+  readonly date: string; // 節入り日 "YYYY-MM-DD"
 }
 
 export interface CalendarProvider {
@@ -109,7 +127,7 @@ export interface CalendarProvider {
   getYearBan(year: number): Ban;
   getMonthBan(year: number, month: number): Ban;
   getDayBan(date: string): Ban;
-  getYearJunishi(year: number): number;   // 十二支番号(0〜11)
+  getYearJunishi(year: number): number; // 十二支番号(0〜11)
   getMonthJunishi(year: number, month: number): number;
   getDayJunishi(date: string): number;
 }

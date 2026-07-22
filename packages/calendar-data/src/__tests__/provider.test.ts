@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
 import { buildBan } from "@mj/engine";
 import type { StarNumber } from "@mj/engine";
+import { describe, expect, it } from "vitest";
 
+import { getDayJunishi, getMonthJunishi, getYearJunishi } from "../junishi.js";
 import { MasterCalendarProvider } from "../provider.js";
-import { getYearCenterStar, getMonthCenterStar } from "../year-month-ban.js";
-import { getYearJunishi, getMonthJunishi, getDayJunishi } from "../junishi.js";
+import { getMonthCenterStar, getYearCenterStar } from "../year-month-ban.js";
 
 const provider = new MasterCalendarProvider();
 
@@ -264,9 +264,7 @@ describe("CalendarProvider としての整合性", () => {
   });
 
   it("範囲外の年はエラーを投げる", () => {
-    expect(() => provider.getSekkiriBoundaries(1900)).toThrow(
-      "Sekki data not available",
-    );
+    expect(() => provider.getSekkiriBoundaries(1900)).toThrow("Sekki data not available");
   });
 
   it("getYearJunishi は CalendarProvider 経由で正しい値を返す", () => {
@@ -296,7 +294,11 @@ describe("節入りデータの連続性", () => {
       );
       // 日付が厳密に昇順であること(重複なし)
       for (let i = 1; i < sorted.length; i++) {
-        expect(sorted[i]!.date > sorted[i - 1]!.date).toBe(true);
+        const curr = sorted[i];
+        const prev = sorted[i - 1];
+        if (curr && prev) {
+          expect(curr.date > prev.date).toBe(true);
+        }
       }
     }
   });
@@ -306,7 +308,7 @@ describe("節入りデータの連続性", () => {
       const boundaries = provider.getSekkiriBoundaries(year);
       const risshun = boundaries.find((b) => b.month === 2);
       expect(risshun).toBeDefined();
-      expect(risshun!.date.slice(5, 7)).toBe("02");
+      expect(risshun?.date.slice(5, 7)).toBe("02");
     }
   });
 });

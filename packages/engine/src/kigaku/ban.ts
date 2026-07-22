@@ -4,9 +4,7 @@ import type { Ban, Direction8, StarNumber } from "../types.js";
 // 中宮から +1 ずつ、この順番に配置する。
 // 仕様書: 中宮 → 北西 → 西 → 北東 → 南 → 北 → 南西 → 東 → 南東
 
-const PLACEMENT_ORDER: readonly Direction8[] = [
-  "NW", "W", "NE", "S", "N", "SW", "E", "SE",
-];
+const PLACEMENT_ORDER: readonly Direction8[] = ["NW", "W", "NE", "S", "N", "SW", "E", "SE"];
 
 // ── 後天定位盤の各星の定位置(固定値・変更禁止) ──────────────
 

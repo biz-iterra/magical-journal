@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { POTENTIAL_TABLE } from "../potential-table.js";
-import {
-  computePotential,
-  computePotentialValue,
-  potentialModule,
-} from "../potential.js";
+import { computePotential, computePotentialValue, potentialModule } from "../potential.js";
 import type { PotentialTypeId } from "../types.js";
 
 // ── 対応表の検証 ──────────────────────────────────────────
@@ -16,9 +12,18 @@ describe("POTENTIAL_TABLE", () => {
 
   it("すべてのエントリが有効な PotentialTypeId である", () => {
     const validIds: Set<string> = new Set([
-      "IR+", "IR-", "IL+", "IL-",
-      "ER+", "ER-", "EL+", "EL-",
-      "PR+", "PR-", "PL+", "PL-",
+      "IR+",
+      "IR-",
+      "IL+",
+      "IL-",
+      "ER+",
+      "ER-",
+      "EL+",
+      "EL-",
+      "PR+",
+      "PR-",
+      "PL+",
+      "PL-",
     ]);
     for (let i = 0; i < POTENTIAL_TABLE.length; i++) {
       expect(validIds.has(POTENTIAL_TABLE[i]!)).toBe(true);
@@ -79,13 +84,7 @@ describe("computePotentialValue", () => {
 
   it("算出値は常に 0〜59 の範囲である", () => {
     // 各種日付でテスト
-    const dates = [
-      "1920-01-01",
-      "1950-06-15",
-      "1988-02-29",
-      "2000-01-01",
-      "2026-07-22",
-    ];
+    const dates = ["1920-01-01", "1950-06-15", "1988-02-29", "2000-01-01", "2026-07-22"];
     for (const d of dates) {
       const val = computePotentialValue(d);
       expect(val).toBeGreaterThanOrEqual(0);

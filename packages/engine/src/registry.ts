@@ -1,9 +1,4 @@
-import type {
-  DiagnosisModule,
-  InputKey,
-  ModuleStatus,
-  ProfileInputs,
-} from "./types.js";
+import type { DiagnosisModule, InputKey, ModuleStatus, ProfileInputs } from "./types.js";
 
 /** レジストリに登録されるモジュール情報 */
 export interface ModuleRegistration {
@@ -24,15 +19,9 @@ export class DiagnosisRegistry {
    * モジュールを登録する。
    * @throws 同一 id が既に登録されている場合
    */
-  register(
-    module: DiagnosisModule,
-    status: ModuleStatus,
-    displayOrder: number,
-  ): void {
+  register(module: DiagnosisModule, status: ModuleStatus, displayOrder: number): void {
     if (this.registrations.has(module.id)) {
-      throw new Error(
-        `DiagnosisRegistry: module "${module.id}" is already registered`,
-      );
+      throw new Error(`DiagnosisRegistry: module "${module.id}" is already registered`);
     }
     this.registrations.set(module.id, { module, status, displayOrder });
   }
@@ -101,8 +90,6 @@ export class DiagnosisRegistry {
   }
 
   private sortedEnabled(): ModuleRegistration[] {
-    return this.enabledRegistrations().sort(
-      (a, b) => a.displayOrder - b.displayOrder,
-    );
+    return this.enabledRegistrations().sort((a, b) => a.displayOrder - b.displayOrder);
   }
 }

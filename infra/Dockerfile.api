@@ -1,0 +1,35 @@
+FROM node:22-slim AS base
+RUN corepack enable && corepack prepare pnpm@11.7.0 --activate
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/engine/package.json packages/engine/
+COPY packages/calendar-data/package.json packages/calendar-data/
+COPY packages/api/package.json packages/api/
+RUN pnpm install --frozen-lockfile --filter @mj/api...
+
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/engine/node_modules ./packages/engine/node_modules
+COPY --from=deps /app/packages/calendar-data/node_modules ./packages/calendar-data/node_modules
+COPY --from=deps /app/packages/api/node_modules ./packages/api/node_modules
+COPY tsconfig.base.json ./
+COPY packages/engine/ packages/engine/
+COPY packages/calendar-data/ packages/calendar-data/
+COPY packages/api/ packages/api/
+RUN pnpm --filter @mj/engine build && \
+    pnpm --filter @mj/calendar-data build && \
+    pnpm --filter @mj/api build
+
+FROM node:22-slim AS runtime
+WORKDIR /app
+COPY --from=build /app/packages/api/dist ./dist
+COPY --from=build /app/packages/api/node_modules ./node_modules
+COPY --from=build /app/packages/engine/dist ./packages/engine/dist
+COPY --from=build /app/packages/engine/package.json ./packages/engine/
+COPY --from=build /app/packages/calendar-data/dist ./packages/calendar-data/dist
+COPY --from=build /app/packages/calendar-data/package.json ./packages/calendar-data/
+
+EXPOSE 3000
+CMD ["node", "dist/index.js"]

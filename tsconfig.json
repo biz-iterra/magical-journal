@@ -4,7 +4,6 @@
     { "path": "packages/engine" },
     { "path": "packages/calendar-data" },
     { "path": "packages/api" },
-    { "path": "packages/batch" },
-    { "path": "packages/liff" }
+    { "path": "packages/batch" }
   ]
 }

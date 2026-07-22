@@ -1,0 +1,78 @@
+/**
+ * LIFF IDトークン検証ミドルウェア。
+ *
+ * - LINE の ID トークン検証 API を呼び出してトークンを検証
+ * - 検証成功 → lineUserId をコンテキストにセット
+ * - 許可リスト(ALLOWED_LINE_USER_IDS)チェック
+ * - 開発モード: `Authorization: Bearer dev:USER_ID` 形式で検証をスキップ
+ */
+
+import { createMiddleware } from "hono/factory";
+import { getEnv } from "../env.js";
+import type { AppEnv } from "../types.js";
+
+/** LINE ID トークン検証 API のレスポンス型(必要最小限) */
+interface LineVerifyResponse {
+  readonly sub?: string;
+  readonly error?: string;
+  readonly error_description?: string;
+}
+
+/**
+ * LINE の IDトークン検証 API を呼び出す。
+ * テスト時にモック可能なよう、関数として分離している。
+ */
+export async function verifyLineIdToken(
+  idToken: string,
+  channelId: string,
+): Promise<LineVerifyResponse> {
+  const res = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ id_token: idToken, client_id: channelId }),
+  });
+  return (await res.json()) as LineVerifyResponse;
+}
+
+/**
+ * 認証ミドルウェア。
+ * Authorization ヘッダーの Bearer トークンを検証し、
+ * lineUserId をコンテキストにセットする。
+ */
+export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
+  const env = getEnv();
+  const authHeader = c.req.header("Authorization");
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    return c.json({ error: "Authorization header required" }, 401);
+  }
+
+  const token = authHeader.slice(7);
+
+  let lineUserId: string;
+
+  // 開発モード: dev:USER_ID 形式
+  if (env.nodeEnv === "development" && token.startsWith("dev:")) {
+    lineUserId = token.slice(4);
+    if (!lineUserId) {
+      return c.json({ error: "Invalid dev token format" }, 401);
+    }
+  } else {
+    // 本番: LINE IDトークン検証
+    const result = await verifyLineIdToken(token, env.lineLoginChannelId);
+
+    if (result.error || !result.sub) {
+      return c.json({ error: "Invalid ID token", detail: result.error_description }, 401);
+    }
+
+    lineUserId = result.sub;
+  }
+
+  // 許可リストチェック(空リストの場合は全員許可)
+  if (env.allowedLineUserIds.length > 0 && !env.allowedLineUserIds.includes(lineUserId)) {
+    return c.json({ error: "User not allowed" }, 403);
+  }
+
+  c.set("lineUserId", lineUserId);
+  await next();
+});

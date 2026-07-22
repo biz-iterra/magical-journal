@@ -1,0 +1,50 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_PATH=/data/mj.sqlite
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET}
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN}
+      - LINE_LOGIN_CHANNEL_ID=${LINE_LOGIN_CHANNEL_ID}
+      - LIFF_ID=${LIFF_ID}
+      - ALLOWED_LINE_USER_IDS=${ALLOWED_LINE_USER_IDS}
+    volumes:
+      - db-data:/data
+    restart: unless-stopped
+
+  batch:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.batch
+    environment:
+      - NODE_ENV=production
+      - DATABASE_PATH=/data/mj.sqlite
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET}
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN}
+      - LLM_PROVIDER=${LLM_PROVIDER:-claude}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ALLOWED_LINE_USER_IDS=${ALLOWED_LINE_USER_IDS}
+    volumes:
+      - db-data:/data
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+    depends_on:
+      - api
+
+volumes:
+  db-data:

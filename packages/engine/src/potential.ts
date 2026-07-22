@@ -1,10 +1,5 @@
-import type {
-  DiagnosisModule,
-  PotentialResult,
-  PotentialTypeId,
-  ProfileInputs,
-} from "./types.js";
 import { POTENTIAL_TABLE } from "./potential-table.js";
+import type { DiagnosisModule, PotentialResult, PotentialTypeId, ProfileInputs } from "./types.js";
 
 // ── 日付計算(Date オブジェクト不使用) ──────────────────────
 
@@ -46,8 +41,7 @@ function daysBetween(
   targetDay: number,
 ): number {
   return (
-    toJulianDay(targetYear, targetMonth, targetDay) -
-    toJulianDay(baseYear, baseMonth, baseDay)
+    toJulianDay(targetYear, targetMonth, targetDay) - toJulianDay(baseYear, baseMonth, baseDay)
   );
 }
 
@@ -75,7 +69,7 @@ export function computePotentialValue(birthDate: string): number {
   const [year, month, day] = parseDate(birthDate);
   const elapsed = daysBetween(BASE_YEAR, BASE_MONTH, BASE_DAY, year, month, day);
   // JavaScript の % は負の被除数に対して負を返すため、正規化する
-  return ((elapsed + 1) % CYCLE + CYCLE) % CYCLE;
+  return (((elapsed + 1) % CYCLE) + CYCLE) % CYCLE;
 }
 
 /**
@@ -85,14 +79,9 @@ function nextDate(dateStr: string): string {
   const [year, month, day] = parseDate(dateStr);
 
   // 月ごとの日数
-  const daysInMonth = [
-    0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
-  ];
+  const daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   // うるう年判定
-  if (
-    (year % 4 === 0 && year % 100 !== 0) ||
-    year % 400 === 0
-  ) {
+  if ((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0) {
     daysInMonth[2] = 29;
   }
 
@@ -123,10 +112,7 @@ function nextDate(dateStr: string): string {
  *   23:00〜23:59 の場合、当日と翌日の両方のタイプを返す(ハイブリッド)。
  *   ただし当日と翌日が同一タイプの場合は単一タイプとして返す。
  */
-export function computePotential(
-  birthDate: string,
-  birthTime?: string,
-): PotentialResult {
+export function computePotential(birthDate: string, birthTime?: string): PotentialResult {
   const rawValue = computePotentialValue(birthDate);
   const primaryType: PotentialTypeId = POTENTIAL_TABLE[rawValue]!;
 
