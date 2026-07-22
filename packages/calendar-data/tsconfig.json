@@ -6,5 +6,6 @@
     "lib": ["ES2022"]
   },
   "include": ["src"],
+  "exclude": ["src/generator"],
   "references": [{ "path": "../engine" }]
 }
