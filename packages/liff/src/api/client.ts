@@ -1,5 +1,19 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
+/**
+ * HTTP ステータスコードを含む API エラー。
+ * catch 側で status を参照して 409 / 404 等を分岐できる。
+ */
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 let currentIdToken: string | null = null;
 
 /**
@@ -39,7 +53,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new Error(`API error ${response.status}: ${text}`);
+    throw new ApiError(response.status, `API error ${response.status}: ${text}`);
   }
 
   return response.json() as Promise<T>;
