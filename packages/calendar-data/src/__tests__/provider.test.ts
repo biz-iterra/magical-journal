@@ -117,12 +117,12 @@ describe("気学上の月の判定 (getKigakuMonth)", () => {
     expect(provider.getKigakuMonth("2026-02-04")).toBe(2);
   });
 
-  it("2026-03-05 → 寅月(2月)", () => {
-    expect(provider.getKigakuMonth("2026-03-05")).toBe(2);
+  it("2026-03-04 → 寅月(2月)", () => {
+    expect(provider.getKigakuMonth("2026-03-04")).toBe(2);
   });
 
-  it("2026-03-06 → 卯月(3月)", () => {
-    expect(provider.getKigakuMonth("2026-03-06")).toBe(3);
+  it("2026-03-05 → 卯月(3月)、啓蟄当日", () => {
+    expect(provider.getKigakuMonth("2026-03-05")).toBe(3);
   });
 
   it("年末(12月)は大雪以降 → 子月(12月)", () => {
