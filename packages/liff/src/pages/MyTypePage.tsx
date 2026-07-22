@@ -50,18 +50,12 @@ interface ProfileResponse {
   diagnosis: DiagnosisResult[];
 }
 
-// ── resultJson 内の型 ────────────────────────────────────
+// ── resultJson 内の型(engine モジュールの出力形状と一致させる) ──
 
-interface PotentialSingle {
-  value: number;
-  typeName: string;
-  potentialSign: string;
-  typeCode: PotentialTypeId;
-}
-
-interface PotentialHybrid {
-  primary: PotentialSingle;
-  secondary: PotentialSingle;
+interface PotentialResult {
+  primaryType: PotentialTypeId;
+  secondaryType?: PotentialTypeId;
+  rawValue: number;
 }
 
 interface ZodiacResult {
@@ -73,20 +67,21 @@ interface KigakuResult {
   getsumeiStar: number;
 }
 
-interface NumerologyResult {
-  lifePathNumber?: number;
-  destinyNumber?: number;
-  isMasterNumber: boolean;
+interface LifepathResult {
+  lifepath: number;
+}
+
+interface DestinyResult {
+  destiny: number;
+  romaji: string;
 }
 
 // ── ヘルパー ─────────────────────────────────────────────
 
-function isPotentialHybrid(data: unknown): data is PotentialHybrid {
-  return typeof data === "object" && data !== null && "primary" in data && "secondary" in data;
-}
+const MASTER_NUMBERS = [11, 22, 33];
 
-function isPotentialSingle(data: unknown): data is PotentialSingle {
-  return typeof data === "object" && data !== null && "typeCode" in data && !("primary" in data);
+function isPotentialResult(data: unknown): data is PotentialResult {
+  return typeof data === "object" && data !== null && "primaryType" in data;
 }
 
 // ── コンポーネント ────────────────────────────────────────
@@ -170,8 +165,7 @@ export function MyTypePage() {
       {lifepath && (
         <NumerologySection
           label="ライフパスナンバー"
-          data={lifepath.result as NumerologyResult}
-          numberKey="lifePathNumber"
+          value={(lifepath.result as LifepathResult).lifepath}
         />
       )}
 
@@ -179,8 +173,7 @@ export function MyTypePage() {
       {destiny && (
         <NumerologySection
           label="ディスティニーナンバー"
-          data={destiny.result as NumerologyResult}
-          numberKey="destinyNumber"
+          value={(destiny.result as DestinyResult).destiny}
         />
       )}
 
@@ -203,35 +196,37 @@ function PotentialSection({
   data: unknown;
   charStyle: "male" | "female";
 }) {
-  if (isPotentialHybrid(data)) {
+  if (!isPotentialResult(data)) return null;
+
+  if (data.secondaryType) {
     return (
-      <HybridDisplay primary={data.primary} secondary={data.secondary} charStyle={charStyle} />
+      <HybridDisplay
+        primary={data.primaryType}
+        secondary={data.secondaryType}
+        charStyle={charStyle}
+      />
     );
   }
 
-  if (isPotentialSingle(data)) {
-    return <SingleDisplay type={data} charStyle={charStyle} />;
-  }
-
-  return null;
+  return <SingleDisplay typeId={data.primaryType} charStyle={charStyle} />;
 }
 
 function SingleDisplay({
-  type,
+  typeId,
   charStyle,
 }: {
-  type: PotentialSingle;
+  typeId: PotentialTypeId;
   charStyle: "male" | "female";
 }) {
-  const charInfo = CHARACTER_MAP.get(type.typeCode);
-  const charName = charInfo ? getCharacterName(type.typeCode, charStyle) : null;
+  const charInfo = CHARACTER_MAP.get(typeId);
+  const charName = charInfo ? getCharacterName(typeId, charStyle) : null;
 
   return (
     <div className={s.mainCard}>
       <div className={s.mainCardLabel}>Potential Type</div>
       <div className={s.charPlaceholder}>CHAR</div>
-      <div className={s.typeCodeLarge}>{type.typeCode}</div>
-      <div className={s.typeNameLarge}>{charInfo?.typeName ?? type.typeName}</div>
+      <div className={s.typeCodeLarge}>{typeId}</div>
+      <div className={s.typeNameLarge}>{charInfo?.typeName ?? typeId}</div>
       {charName && <div className={s.characterName}>{charName}</div>}
     </div>
   );
@@ -242,14 +237,14 @@ function HybridDisplay({
   secondary,
   charStyle,
 }: {
-  primary: PotentialSingle;
-  secondary: PotentialSingle;
+  primary: PotentialTypeId;
+  secondary: PotentialTypeId;
   charStyle: "male" | "female";
 }) {
-  const primaryInfo = CHARACTER_MAP.get(primary.typeCode);
-  const secondaryInfo = CHARACTER_MAP.get(secondary.typeCode);
-  const primaryCharName = primaryInfo ? getCharacterName(primary.typeCode, charStyle) : null;
-  const secondaryCharName = secondaryInfo ? getCharacterName(secondary.typeCode, charStyle) : null;
+  const primaryInfo = CHARACTER_MAP.get(primary);
+  const secondaryInfo = CHARACTER_MAP.get(secondary);
+  const primaryCharName = primaryInfo ? getCharacterName(primary, charStyle) : null;
+  const secondaryCharName = secondaryInfo ? getCharacterName(secondary, charStyle) : null;
 
   return (
     <div className={s.hybridRow}>
@@ -257,16 +252,16 @@ function HybridDisplay({
       <div className={s.hybridPrimary}>
         <div className={s.hybridLabel}>Primary</div>
         <div className={s.charPlaceholder}>CHAR</div>
-        <div className={s.typeCodeLarge}>{primary.typeCode}</div>
-        <div className={s.typeNameLarge}>{primaryInfo?.typeName ?? primary.typeName}</div>
+        <div className={s.typeCodeLarge}>{primary}</div>
+        <div className={s.typeNameLarge}>{primaryInfo?.typeName ?? primary}</div>
         {primaryCharName && <div className={s.characterName}>{primaryCharName}</div>}
       </div>
       {/* 副タイプ(小) */}
       <div className={s.hybridSecondary}>
         <div className={s.hybridLabel}>Secondary</div>
         <div className={s.charPlaceholderSmall}>CHAR</div>
-        <div className={s.hybridCodeSmall}>{secondary.typeCode}</div>
-        <div className={s.hybridNameSmall}>{secondaryInfo?.typeName ?? secondary.typeName}</div>
+        <div className={s.hybridCodeSmall}>{secondary}</div>
+        <div className={s.hybridNameSmall}>{secondaryInfo?.typeName ?? secondary}</div>
         {secondaryCharName && (
           <div style={{ fontSize: "11px", color: "#6366f1", marginTop: "4px" }}>
             {secondaryCharName}
@@ -305,24 +300,13 @@ function KigakuSection({ data }: { data: KigakuResult }) {
 
 // ── 数秘術セクション ─────────────────────────────────────
 
-function NumerologySection({
-  label,
-  data,
-  numberKey,
-}: {
-  label: string;
-  data: NumerologyResult;
-  numberKey: "lifePathNumber" | "destinyNumber";
-}) {
-  const num = data[numberKey];
-  if (num == null) return null;
-
+function NumerologySection({ label, value }: { label: string; value: number }) {
   return (
     <div className={s.card}>
       <div className={s.cardLabel}>{label}</div>
       <div className={s.cardValue}>
-        {num}
-        {data.isMasterNumber && <span className={s.masterBadge}>Master Number</span>}
+        {value}
+        {MASTER_NUMBERS.includes(value) && <span className={s.masterBadge}>Master Number</span>}
       </div>
     </div>
   );

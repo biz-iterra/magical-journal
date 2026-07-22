@@ -1,0 +1,36 @@
+# 依存はコンテナ内で pnpm install するため、ホスト(Windows)の
+# ネイティブバイナリを持ち込まない。混入すると Linux コンテナで
+# better-sqlite3 の binding が壊れる。
+**/node_modules
+
+# ビルド成果物(コンテナ内で再ビルド)
+# 注意: *.tsbuildinfo はルート直下のみのマッチで packages/ 配下に効かず、
+# stale な増分キャッシュが混入して tsc -b が emit をスキップする事故になる。
+# 必ず **/ 付きで全階層を除外する。
+**/dist
+**/*.tsbuildinfo
+
+# 環境・シークレット
+.env
+.env.*
+!.env.example
+
+# データベース実体
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# 再生成可能な暦データ
+packages/calendar-data/generated/
+
+# Git・IDE・OS
+.git
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# フロント(API/batch イメージには不要)
+packages/liff/
+docs/

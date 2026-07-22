@@ -2,34 +2,24 @@ FROM node:22-slim AS base
 RUN corepack enable && corepack prepare pnpm@11.7.0 --activate
 WORKDIR /app
 
-FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/engine/package.json packages/engine/
-COPY packages/calendar-data/package.json packages/calendar-data/
-COPY packages/api/package.json packages/api/
-RUN pnpm install --frozen-lockfile --filter @mj/api...
-
+# ── ビルド ──────────────────────────────────────────────────
+# pnpm の workspace symlink をステージ間で COPY すると解決が壊れるため、
+# install と build を同一ステージ内で行う。
 FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/engine/node_modules ./packages/engine/node_modules
-COPY --from=deps /app/packages/calendar-data/node_modules ./packages/calendar-data/node_modules
-COPY --from=deps /app/packages/api/node_modules ./packages/api/node_modules
-COPY tsconfig.base.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json ./
 COPY packages/engine/ packages/engine/
 COPY packages/calendar-data/ packages/calendar-data/
 COPY packages/api/ packages/api/
-RUN pnpm --filter @mj/engine build && \
-    pnpm --filter @mj/calendar-data build && \
-    pnpm --filter @mj/api build
+# better-sqlite3 のビルド許可を Docker 内でのみ有効化する。
+# ホスト(Windows ARM64)ではプリビルドが無くビルド不能なため
+# pnpm-workspace.yaml では false にしてある。Linux ではプリビルド取得可。
+RUN sed -i 's/^  better-sqlite3: false$/  better-sqlite3: true/' pnpm-workspace.yaml \
+ && pnpm install --frozen-lockfile --filter @mj/api...
+# api と、その workspace 依存(engine, calendar-data)を依存順にビルドする。
+RUN pnpm --filter "@mj/api..." build
 
-FROM node:22-slim AS runtime
-WORKDIR /app
-COPY --from=build /app/packages/api/dist ./dist
-COPY --from=build /app/packages/api/node_modules ./node_modules
-COPY --from=build /app/packages/engine/dist ./packages/engine/dist
-COPY --from=build /app/packages/engine/package.json ./packages/engine/
-COPY --from=build /app/packages/calendar-data/dist ./packages/calendar-data/dist
-COPY --from=build /app/packages/calendar-data/package.json ./packages/calendar-data/
-
+# ── ランタイム ──────────────────────────────────────────────
+# build ステージをそのまま起動する(symlink が正しいのはこのステージ内のみ)。
+WORKDIR /app/packages/api
 EXPOSE 3000
 CMD ["node", "dist/index.js"]
