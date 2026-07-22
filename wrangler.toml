@@ -1,6 +1,0 @@
-name = "magical-journal"
-compatibility_date = "2024-09-23"
-pages_build_output_dir = "packages/liff/dist"
-
-[build]
-command = "pnpm --filter @mj/engine build && pnpm --filter @mj/calendar-data build && pnpm --filter @mj/liff build"
