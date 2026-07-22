@@ -82,6 +82,9 @@ importers:
 
   packages/liff:
     dependencies:
+      '@mj/calendar-data':
+        specifier: workspace:*
+        version: link:../calendar-data
       '@mj/engine':
         specifier: workspace:*
         version: link:../engine
