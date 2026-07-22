@@ -12,6 +12,8 @@ export interface AppEnvVars {
   readonly lineLoginChannelId: string;
   /** 許可済み LINE ユーザー ID のリスト */
   readonly allowedLineUserIds: readonly string[];
+  /** CORS で追加許可するオリジンのリスト(カンマ区切り。既定の *.pages.dev / *.workers.dev / localhost に加算) */
+  readonly allowedOrigins: readonly string[];
   /** 実行環境 */
   readonly nodeEnv: string;
 }
@@ -51,11 +53,18 @@ export function getEnv(): AppEnvVars {
     .map((id) => id.trim())
     .filter((id) => id.length > 0);
 
+  const originsRaw = process.env.ALLOWED_ORIGINS ?? "";
+  const allowedOrigins = originsRaw
+    .split(",")
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
+
   cached = {
     port,
     databasePath,
     lineLoginChannelId,
     allowedLineUserIds,
+    allowedOrigins,
     nodeEnv,
   };
 

@@ -5,6 +5,7 @@
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { getEnv } from "./env.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { errorHandler } from "./middleware/error.js";
 import diagnosis from "./routes/diagnosis.js";
@@ -26,8 +27,16 @@ app.use(
       if (origin.endsWith(".pages.dev") && origin.startsWith("https://")) {
         return origin;
       }
+      // Cloudflare Workers(静的アセット配信): *.workers.dev
+      if (origin.endsWith(".workers.dev") && origin.startsWith("https://")) {
+        return origin;
+      }
       // ローカル開発: http://localhost:*
       if (/^http:\/\/localhost(:\d+)?$/.test(origin)) {
+        return origin;
+      }
+      // 環境変数で追加許可されたオリジン(カスタムドメイン等)
+      if (getEnv().allowedOrigins.includes(origin)) {
         return origin;
       }
       return undefined;

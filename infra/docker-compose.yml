@@ -14,6 +14,7 @@ services:
       - LINE_LOGIN_CHANNEL_ID=${LINE_LOGIN_CHANNEL_ID}
       - LIFF_ID=${LIFF_ID}
       - ALLOWED_LINE_USER_IDS=${ALLOWED_LINE_USER_IDS}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
     volumes:
       - db-data:/data
     restart: unless-stopped
