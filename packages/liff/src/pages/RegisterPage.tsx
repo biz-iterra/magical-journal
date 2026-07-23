@@ -2,6 +2,7 @@ import { kanaToHepburn } from "@mj/engine";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
+import { geocodeAddress } from "../services/geocode";
 import * as s from "./RegisterPage.css";
 
 // ── 定数 ──────────────────────────────────────────────────
@@ -63,6 +64,8 @@ interface RegisterPayload {
   nameKana: string;
   nameRomaji: string;
   addressText?: string;
+  lat?: number;
+  lng?: number;
   charStyle: "male" | "female";
 }
 
@@ -122,7 +125,8 @@ export function RegisterPage() {
           form.givenNameKana.trim() !== "" &&
           isHiragana(form.familyNameKana) &&
           isHiragana(form.givenNameKana) &&
-          finalRomaji !== ""
+          finalRomaji !== "" &&
+          form.addressText.trim() !== ""
         );
       case 2:
         return form.charStyle !== "";
@@ -167,15 +171,20 @@ export function RegisterPage() {
       payload.birthTime = `${pad2(Number(form.birthTimeH))}:${pad2(Number(form.birthTimeM))}`;
     }
 
-    // 住所(任意)
-    if (form.addressText.trim()) {
-      payload.addressText = form.addressText.trim();
-    }
+    // 住所(必須。docs/11 の kigaku_direction 必須入力)
+    payload.addressText = form.addressText.trim();
 
     setSubmitting(true);
     setError(null);
 
     try {
+      // 住所 → 緯度経度(方位マップの中心座標)
+      const latLng = await geocodeAddress(payload.addressText);
+      if (latLng) {
+        payload.lat = latLng.lat;
+        payload.lng = latLng.lng;
+      }
+
       await apiClient.post("/api/register", payload);
       navigate("/mytype", { replace: true });
     } catch (err) {
@@ -425,7 +434,7 @@ function Step2Name({ form, autoRomaji, update }: StepProps & { autoRomaji: strin
       <div className={s.fieldGroup}>
         <div className={s.label}>
           住所
-          <span className={s.optionalBadge}>任意</span>
+          <span className={s.requiredBadge}>必須</span>
         </div>
         <input
           type="text"
@@ -436,7 +445,7 @@ function Step2Name({ form, autoRomaji, update }: StepProps & { autoRomaji: strin
           onChange={(e) => update("addressText", e.target.value)}
         />
         <p style={{ fontSize: "11px", color: "#999", marginTop: "4px" }}>
-          方位マップで自宅を中心に表示するために使います
+          方位の判定と方位マップの中心表示に使います。番地までの入力は不要です
         </p>
       </div>
     </>

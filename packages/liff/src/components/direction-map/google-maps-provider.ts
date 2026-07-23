@@ -3,7 +3,8 @@ import type { MapProvider } from "./types.js";
 
 let loadPromise: Promise<void> | null = null;
 
-function loadGoogleMaps(apiKey: string): Promise<void> {
+/** Google Maps JS API を一度だけロードする(地図表示と Geocoding で共用) */
+export function loadGoogleMaps(apiKey: string): Promise<void> {
   if (loadPromise) return loadPromise;
 
   if (typeof google !== "undefined" && google.maps) {
