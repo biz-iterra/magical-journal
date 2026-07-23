@@ -5,8 +5,11 @@
  * 本人セッション必須(auth ミドルウェアで担保)。
  */
 
+import type { ProfileInputs } from "@mj/engine";
 import { Hono } from "hono";
+import { getDb } from "../db/connection.js";
 import { getDiagResults, getProfile, getUserByLineId, updateProfile } from "../db/queries.js";
+import { runAndSaveDiagnosis } from "../services/diagnosis.js";
 import type { AppEnv, ProfileUpdateBody } from "../types.js";
 
 const profile = new Hono<AppEnv>();
@@ -63,12 +66,37 @@ profile.patch("/", async (c) => {
     return c.json({ error: "charStyle must be 'male' or 'female'" }, 400);
   }
 
-  const updated = updateProfile(user.id, {
-    addressText: body.addressText,
-    lat: body.lat,
-    lng: body.lng,
-    charStyle: body.charStyle,
-  });
+  if (body.birthTime !== undefined && !/^\d{2}:\d{2}$/.test(body.birthTime)) {
+    return c.json({ error: "birthTime must be HH:MM format" }, 400);
+  }
+
+  // 出生時刻はポテンシャルタイプ(ハイブリッド判定)に影響するため、
+  // 変更時は診断を再計算する。プロフィール更新と再診断を1トランザクションで行う。
+  const db = getDb();
+  const updated = db.transaction(() => {
+    const u = updateProfile(user.id, {
+      birthTime: body.birthTime,
+      addressText: body.addressText,
+      lat: body.lat,
+      lng: body.lng,
+      charStyle: body.charStyle,
+    });
+    if (!u) return undefined;
+
+    if (body.birthTime !== undefined) {
+      const inputs: ProfileInputs = {
+        birthDate: u.birth_date,
+        birthTime: u.birth_time ?? undefined,
+        nameKana: u.name_kana ?? undefined,
+        nameRomaji: u.name_romaji ?? undefined,
+        homeLat: u.lat ?? undefined,
+        homeLng: u.lng ?? undefined,
+      };
+      runAndSaveDiagnosis(user.id, inputs);
+    }
+
+    return u;
+  })();
 
   if (!updated) {
     return c.json({ error: "Profile not found" }, 404);

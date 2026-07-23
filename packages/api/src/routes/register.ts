@@ -7,12 +7,11 @@
  * 3. 201 を返す
  */
 
-import { MasterCalendarProvider } from "@mj/calendar-data";
 import type { ProfileInputs } from "@mj/engine";
 import { Hono } from "hono";
 import { getDb } from "../db/connection.js";
-import { createProfile, createUser, getUserByLineId, saveDiagResult } from "../db/queries.js";
-import { createRegistry } from "../registry-setup.js";
+import { createProfile, createUser, getUserByLineId } from "../db/queries.js";
+import { runAndSaveDiagnosis } from "../services/diagnosis.js";
 import type { AppEnv, RegisterBody } from "../types.js";
 
 const register = new Hono<AppEnv>();
@@ -65,10 +64,7 @@ register.post("/", async (c) => {
       charStyle: body.charStyle,
     });
 
-    // 3. 全 enabled モジュール実行
-    const registry = createRegistry();
-    const calendar = new MasterCalendarProvider();
-
+    // 3. 全 enabled モジュール実行 → diag_results 保存
     const inputs: ProfileInputs = {
       birthDate: body.birthDate,
       birthTime: body.birthTime,
@@ -78,15 +74,7 @@ register.post("/", async (c) => {
       homeLng: body.lng,
     };
 
-    const results = registry.computeAll(inputs, calendar);
-
-    // 4. 診断結果を保存
-    for (const [moduleId, result] of results) {
-      const moduleReg = registry.getModule(moduleId);
-      if (moduleReg) {
-        saveDiagResult(user.id, moduleId, moduleReg.module.version, JSON.stringify(result));
-      }
-    }
+    runAndSaveDiagnosis(user.id, inputs);
 
     return user;
   });

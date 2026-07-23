@@ -83,6 +83,7 @@ export function getProfile(userId: number): ProfileRow | undefined {
 }
 
 export interface UpdateProfileData {
+  readonly birthTime?: string;
   readonly addressText?: string;
   readonly lat?: number;
   readonly lng?: number;
@@ -96,6 +97,10 @@ export function updateProfile(userId: number, data: UpdateProfileData): ProfileR
   const sets: string[] = [];
   const values: unknown[] = [];
 
+  if (data.birthTime !== undefined) {
+    sets.push("birth_time = ?");
+    values.push(data.birthTime);
+  }
   if (data.addressText !== undefined) {
     sets.push("address_text = ?");
     values.push(data.addressText);

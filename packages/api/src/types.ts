@@ -69,6 +69,7 @@ export interface RegisterBody {
 }
 
 export interface ProfileUpdateBody {
+  readonly birthTime?: string;
   readonly addressText?: string;
   readonly lat?: number;
   readonly lng?: number;
