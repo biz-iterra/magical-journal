@@ -1,4 +1,5 @@
 import { style } from "@vanilla-extract/css";
+import { vars } from "../styles/theme.css";
 
 export const container = style({
   paddingBottom: "80px",
@@ -7,12 +8,12 @@ export const container = style({
 export const pageTitle = style({
   fontSize: "20px",
   fontWeight: 700,
-  color: "#1a1a1a",
+  color: vars.color.text,
   margin: "8px 0 20px",
 });
 
 export const section = style({
-  backgroundColor: "#fff",
+  backgroundColor: vars.color.surface,
   borderRadius: "14px",
   padding: "16px",
   marginBottom: "14px",
@@ -22,18 +23,18 @@ export const section = style({
 export const sectionLabel = style({
   fontSize: "13px",
   fontWeight: 600,
-  color: "#6366f1",
+  color: vars.color.accent,
   marginBottom: "10px",
 });
 
 export const readonlyValue = style({
   fontSize: "15px",
-  color: "#333",
+  color: vars.color.textBody,
 });
 
 export const readonlyNote = style({
   fontSize: "11px",
-  color: "#999",
+  color: vars.color.textFaint,
   marginTop: "4px",
 });
 
@@ -47,9 +48,9 @@ export const select = style({
   appearance: "none",
   padding: "10px 12px",
   fontSize: "15px",
-  color: "#1a1a1a",
-  backgroundColor: "#f9fafb",
-  border: "1px solid #e5e7eb",
+  color: vars.color.text,
+  backgroundColor: vars.color.surfaceSubtle,
+  border: `1px solid ${vars.color.border}`,
   borderRadius: "10px",
   outline: "none",
 });
@@ -58,20 +59,20 @@ export const input = style({
   width: "100%",
   padding: "10px 12px",
   fontSize: "15px",
-  color: "#1a1a1a",
-  backgroundColor: "#f9fafb",
-  border: "1px solid #e5e7eb",
+  color: vars.color.text,
+  backgroundColor: vars.color.surfaceSubtle,
+  border: `1px solid ${vars.color.border}`,
   borderRadius: "10px",
   outline: "none",
   boxSizing: "border-box",
   selectors: {
-    "&:focus": { borderColor: "#6366f1" },
+    "&:focus": { borderColor: vars.color.accent },
   },
 });
 
 export const hint = style({
   fontSize: "11px",
-  color: "#999",
+  color: vars.color.textFaint,
   marginTop: "6px",
 });
 
@@ -86,15 +87,15 @@ export const styleCard = style({
   flexDirection: "column",
   alignItems: "center",
   padding: "14px 8px",
-  backgroundColor: "#f9fafb",
-  border: "2px solid #e5e7eb",
+  backgroundColor: vars.color.surfaceSubtle,
+  border: `2px solid ${vars.color.border}`,
   borderRadius: "12px",
   cursor: "pointer",
 });
 
 export const styleCardSelected = style({
-  borderColor: "#6366f1",
-  backgroundColor: "#eef2ff",
+  borderColor: vars.color.accent,
+  backgroundColor: vars.color.accentSubtle,
 });
 
 export const styleCardImage = style({
@@ -109,12 +110,12 @@ export const styleCardImage = style({
 export const styleCardLabel = style({
   fontSize: "14px",
   fontWeight: 600,
-  color: "#1a1a1a",
+  color: vars.color.text,
 });
 
 export const styleCardDesc = style({
   fontSize: "11px",
-  color: "#888",
+  color: vars.color.textMuted,
   marginTop: "2px",
 });
 
@@ -124,8 +125,8 @@ export const saveBar = style({
   right: 0,
   bottom: 0,
   padding: "12px 16px calc(12px + env(safe-area-inset-bottom))",
-  backgroundColor: "rgba(255,255,255,0.95)",
-  borderTop: "1px solid #eee",
+  backgroundColor: vars.color.overlaySaveBar,
+  borderTop: `1px solid ${vars.color.borderHairline}`,
   backdropFilter: "blur(8px)",
 });
 
@@ -134,8 +135,8 @@ export const saveButton = style({
   padding: "14px",
   fontSize: "15px",
   fontWeight: 600,
-  color: "#fff",
-  backgroundColor: "#6366f1",
+  color: vars.color.onAccent,
+  backgroundColor: vars.color.accent,
   border: "none",
   borderRadius: "12px",
   cursor: "pointer",
@@ -152,17 +153,17 @@ export const banner = style({
 });
 
 export const bannerError = style({
-  backgroundColor: "#fef2f2",
-  color: "#dc2626",
+  backgroundColor: vars.color.misfortuneBg,
+  color: vars.color.misfortuneText,
 });
 
 export const bannerSuccess = style({
-  backgroundColor: "#f0fdf4",
-  color: "#16a34a",
+  backgroundColor: vars.color.successBg,
+  color: vars.color.fortuneText,
 });
 
 export const loadingWrap = style({
   textAlign: "center",
   padding: "40px 0",
-  color: "#888",
+  color: vars.color.textMuted,
 });

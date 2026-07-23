@@ -1,4 +1,6 @@
 import { globalStyle } from "@vanilla-extract/css";
+// createGlobalTheme(:root) の副作用でセマンティックトークンを定義する。
+import { vars } from "./theme.css";
 
 globalStyle("*, *::before, *::after", {
   boxSizing: "border-box",
@@ -15,8 +17,8 @@ globalStyle("body", {
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif',
   lineHeight: 1.6,
-  color: "#1a1a1a",
-  backgroundColor: "#ffffff",
+  color: vars.color.text,
+  backgroundColor: vars.color.surface,
   WebkitFontSmoothing: "antialiased",
   MozOsxFontSmoothing: "grayscale",
 });

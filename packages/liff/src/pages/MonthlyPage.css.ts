@@ -1,4 +1,5 @@
 import { style } from "@vanilla-extract/css";
+import { vars } from "../styles/theme.css";
 
 // 月間ページは今日のページ(TodayPage)の「月盤版」。
 // 共通の見た目は TodayPage.css を再利用し、月間固有のスタイルのみここで定義する。
@@ -39,7 +40,7 @@ export {
 // カレンダー月と気学月がずれる点の注記
 export const kigakuNote = style({
   fontSize: "11px",
-  color: "#999",
+  color: vars.color.textFaint,
   lineHeight: 1.5,
   marginBottom: "16px",
 });

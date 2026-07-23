@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
 import { PostalCodeField } from "../components/PostalCodeField";
 import { geocodeAddress } from "../services/geocode";
+import { vars } from "../styles/theme.css";
 import { characterImagePath } from "../utils/character-assets";
 import * as s from "./RegisterPage.css";
 
@@ -368,7 +369,7 @@ function Step1BirthDate({ form, maxDay, update }: StepProps & { maxDay: number }
             </select>
           </div>
         </div>
-        <p style={{ fontSize: "11px", color: "#999", marginTop: "6px" }}>
+        <p style={{ fontSize: "11px", color: vars.color.textFaint, marginTop: "6px" }}>
           出生時刻が分かると、より詳しい診断(ハイブリッドタイプ)が可能になります
         </p>
       </div>
@@ -398,7 +399,7 @@ function Step2Name({ form, autoRomaji, update }: StepProps & { autoRomaji: strin
             placeholder="せい"
             value={form.familyNameKana}
             onChange={(e) => update("familyNameKana", e.target.value)}
-            style={familyErr ? { borderColor: "#ef4444" } : undefined}
+            style={familyErr ? { borderColor: vars.color.danger } : undefined}
           />
           <input
             type="text"
@@ -407,11 +408,11 @@ function Step2Name({ form, autoRomaji, update }: StepProps & { autoRomaji: strin
             placeholder="めい"
             value={form.givenNameKana}
             onChange={(e) => update("givenNameKana", e.target.value)}
-            style={givenErr ? { borderColor: "#ef4444" } : undefined}
+            style={givenErr ? { borderColor: vars.color.danger } : undefined}
           />
         </div>
         {(familyErr || givenErr) && (
-          <p style={{ fontSize: "11px", color: "#ef4444", marginTop: "4px" }}>
+          <p style={{ fontSize: "11px", color: vars.color.danger, marginTop: "4px" }}>
             ひらがなで入力してください
           </p>
         )}
@@ -450,7 +451,7 @@ function Step2Name({ form, autoRomaji, update }: StepProps & { autoRomaji: strin
           value={form.addressText}
           onChange={(e) => update("addressText", e.target.value)}
         />
-        <p style={{ fontSize: "11px", color: "#999", marginTop: "4px" }}>
+        <p style={{ fontSize: "11px", color: vars.color.textFaint, marginTop: "4px" }}>
           郵便番号で検索するか、直接入力してください。方位の判定と方位マップの中心表示に使います
         </p>
       </div>
@@ -484,7 +485,7 @@ function Step3CharStyle({ form, update }: StepProps) {
         キャラクター表示スタイル
         <span className={s.requiredBadge}>必須</span>
       </div>
-      <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
+      <p style={{ fontSize: "13px", color: vars.color.textTertiary, marginBottom: "12px" }}>
         あなたのタイプのキャラクターです。どちらのスタイルで表示するか選んでください。あとから設定で変更できます。
       </p>
       <div className={s.styleChoices}>

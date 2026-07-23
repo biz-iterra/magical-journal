@@ -12,7 +12,8 @@ import {
   kanaToHepburn,
 } from "@mj/engine";
 import type { NumerologyNumber, StarNumber, ZodiacSign } from "@mj/engine";
-import { type FormEvent, useCallback, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useCharacterTheme } from "../components/CharacterTheme";
 import { characterImagePath } from "../utils/character-assets";
 import * as s from "./FriendDiagPage.css";
 
@@ -93,6 +94,14 @@ export function FriendDiagPage() {
   const [nameMei, setNameMei] = useState("");
   const [result, setResult] = useState<FriendResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const { setThemeType } = useCharacterTheme();
+
+  // 結果カードには診断されたタイプの色を適用する(docs/06。結果クリアで元へ戻す)。
+  useEffect(() => {
+    setThemeType(result ? result.potential.primaryType : null);
+    return () => setThemeType(null);
+  }, [result, setThemeType]);
 
   const calendar = useMemo(() => new MasterCalendarProvider(), []);
 
@@ -233,9 +242,7 @@ export function FriendDiagPage() {
               />
             </div>
             {(nameSei || nameMei) && (
-              <p style={{ fontSize: "11px", color: "#999", marginTop: "4px" }}>
-                ディスティニーナンバーの算出に使用します
-              </p>
+              <p className={s.fieldNote}>ディスティニーナンバーの算出に使用します</p>
             )}
           </div>
 
@@ -246,21 +253,7 @@ export function FriendDiagPage() {
       </form>
 
       {/* エラー */}
-      {error && (
-        <div
-          style={{
-            padding: "12px 14px",
-            fontSize: "13px",
-            color: "#dc2626",
-            backgroundColor: "#fef2f2",
-            borderRadius: "8px",
-            border: "1px solid #fecaca",
-            marginBottom: "12px",
-          }}
-        >
-          {error}
-        </div>
-      )}
+      {error && <div className={s.errorBanner}>{error}</div>}
 
       {/* 結果 */}
       {result && (
@@ -345,9 +338,7 @@ function PotentialCard({
       />
       <div className={s.typeCodeLarge}>{potential.primaryType}</div>
       <div className={s.typeNameLarge}>{info?.typeName ?? potential.primaryType}</div>
-      {charName && (
-        <div style={{ fontSize: "13px", color: "#6366f1", marginTop: "4px" }}>{charName}</div>
-      )}
+      {charName && <div className={s.resultCharName}>{charName}</div>}
       {potential.secondaryType && (
         <div className={s.cardSub} style={{ marginTop: "8px" }}>
           ハイブリッド: {potential.secondaryType}

@@ -1,4 +1,5 @@
 import { style } from "@vanilla-extract/css";
+import { vars } from "../styles/theme.css";
 
 // ── レイアウト ─────────────────────────────────────────────
 
@@ -9,20 +10,20 @@ export const container = style({
 export const pageTitle = style({
   fontSize: "18px",
   fontWeight: 600,
-  color: "#1a1a1a",
+  color: vars.color.text,
   marginBottom: "4px",
 });
 
 export const pageSubtitle = style({
   fontSize: "13px",
-  color: "#888",
+  color: vars.color.textMuted,
   marginBottom: "20px",
 });
 
 // ── 入力フォーム ──────────────────────────────────────────
 
 export const formCard = style({
-  backgroundColor: "#fff",
+  backgroundColor: vars.color.surface,
   borderRadius: "16px",
   padding: "20px",
   marginBottom: "16px",
@@ -42,19 +43,19 @@ export const label = style({
   display: "block",
   fontSize: "13px",
   fontWeight: 500,
-  color: "#555",
+  color: vars.color.textSecondary,
   marginBottom: "6px",
 });
 
 export const requiredBadge = style({
   fontSize: "11px",
-  color: "#ef4444",
+  color: vars.color.danger,
   marginLeft: "4px",
 });
 
 export const optionalBadge = style({
   fontSize: "11px",
-  color: "#999",
+  color: vars.color.textFaint,
   marginLeft: "4px",
 });
 
@@ -68,10 +69,10 @@ export const select = style({
   height: "48px",
   padding: "0 32px 0 12px",
   fontSize: "16px",
-  border: "1px solid #ddd",
+  border: `1px solid ${vars.color.borderInput}`,
   borderRadius: "10px",
-  backgroundColor: "#fff",
-  color: "#1a1a1a",
+  backgroundColor: vars.color.surface,
+  color: vars.color.text,
   appearance: "none",
   WebkitAppearance: "none",
   backgroundImage:
@@ -81,8 +82,8 @@ export const select = style({
   backgroundSize: "20px 20px",
   ":focus": {
     outline: "none",
-    borderColor: "#6366f1",
-    boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+    borderColor: vars.color.accent,
+    boxShadow: `0 0 0 3px ${vars.color.accentFocusRing}`,
   },
 });
 
@@ -91,17 +92,17 @@ export const input = style({
   height: "48px",
   padding: "0 14px",
   fontSize: "16px",
-  border: "1px solid #ddd",
+  border: `1px solid ${vars.color.borderInput}`,
   borderRadius: "10px",
-  backgroundColor: "#fff",
-  color: "#1a1a1a",
+  backgroundColor: vars.color.surface,
+  color: vars.color.text,
   ":focus": {
     outline: "none",
-    borderColor: "#6366f1",
-    boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+    borderColor: vars.color.accent,
+    boxShadow: `0 0 0 3px ${vars.color.accentFocusRing}`,
   },
   "::placeholder": {
-    color: "#bbb",
+    color: vars.color.textPlaceholder,
   },
 });
 
@@ -114,18 +115,18 @@ export const diagnoseButton = style({
   height: "48px",
   fontSize: "15px",
   fontWeight: 600,
-  color: "#fff",
-  backgroundColor: "#6366f1",
+  color: vars.color.onAccent,
+  backgroundColor: vars.color.accent,
   border: "none",
   borderRadius: "12px",
   cursor: "pointer",
   marginTop: "8px",
   ":disabled": {
-    backgroundColor: "#c7d2fe",
+    backgroundColor: vars.color.accentBorder,
     cursor: "not-allowed",
   },
   ":active": {
-    backgroundColor: "#4f46e5",
+    backgroundColor: vars.color.accentStrong,
   },
 });
 
@@ -138,12 +139,12 @@ export const resultSection = style({
 export const resultHeader = style({
   fontSize: "15px",
   fontWeight: 600,
-  color: "#1a1a1a",
+  color: vars.color.text,
   marginBottom: "12px",
 });
 
 export const card = style({
-  backgroundColor: "#fff",
+  backgroundColor: vars.color.surface,
   borderRadius: "12px",
   padding: "16px 20px",
   marginBottom: "10px",
@@ -153,7 +154,7 @@ export const card = style({
 export const cardLabel = style({
   fontSize: "11px",
   fontWeight: 600,
-  color: "#999",
+  color: vars.color.textFaint,
   textTransform: "uppercase" as const,
   letterSpacing: "0.06em",
   marginBottom: "6px",
@@ -162,17 +163,17 @@ export const cardLabel = style({
 export const cardValue = style({
   fontSize: "18px",
   fontWeight: 600,
-  color: "#1a1a1a",
+  color: vars.color.text,
 });
 
 export const cardSub = style({
   fontSize: "13px",
-  color: "#888",
+  color: vars.color.textMuted,
   marginTop: "2px",
 });
 
 export const mainCard = style({
-  backgroundColor: "#fff",
+  backgroundColor: vars.color.surface,
   borderRadius: "16px",
   padding: "24px 20px",
   marginBottom: "12px",
@@ -182,7 +183,7 @@ export const mainCard = style({
 export const mainCardLabel = style({
   fontSize: "11px",
   fontWeight: 600,
-  color: "#6366f1",
+  color: vars.color.accent,
   textTransform: "uppercase" as const,
   letterSpacing: "0.08em",
   marginBottom: "8px",
@@ -191,7 +192,7 @@ export const mainCardLabel = style({
 export const typeCodeLarge = style({
   fontSize: "28px",
   fontWeight: 700,
-  color: "#1a1a1a",
+  color: vars.color.text,
   lineHeight: 1.2,
   marginBottom: "4px",
 });
@@ -199,16 +200,42 @@ export const typeCodeLarge = style({
 export const typeNameLarge = style({
   fontSize: "15px",
   fontWeight: 500,
-  color: "#555",
+  color: vars.color.textSecondary,
+});
+
+export const resultCharName = style({
+  fontSize: "13px",
+  color: vars.color.accent,
+  marginTop: "4px",
+});
+
+// ── 補助テキスト ──────────────────────────────────────────
+
+export const fieldNote = style({
+  fontSize: "11px",
+  color: vars.color.textFaint,
+  marginTop: "4px",
+});
+
+// ── エラー ────────────────────────────────────────────────
+
+export const errorBanner = style({
+  padding: "12px 14px",
+  fontSize: "13px",
+  color: vars.color.misfortuneText,
+  backgroundColor: vars.color.misfortuneBg,
+  borderRadius: "8px",
+  border: `1px solid ${vars.color.misfortuneBorder}`,
+  marginBottom: "12px",
 });
 
 export const masterBadge = style({
   display: "inline-block",
   fontSize: "10px",
   fontWeight: 600,
-  color: "#d97706",
-  backgroundColor: "#fffbeb",
-  border: "1px solid #fde68a",
+  color: vars.color.warningText,
+  backgroundColor: vars.color.warningBg,
+  border: `1px solid ${vars.color.warningBorder}`,
   borderRadius: "4px",
   padding: "2px 6px",
   marginLeft: "8px",
@@ -219,7 +246,7 @@ export const masterBadge = style({
 
 export const privacyNote = style({
   fontSize: "11px",
-  color: "#aaa",
+  color: vars.color.textDisabled,
   textAlign: "center",
   marginTop: "16px",
   lineHeight: 1.5,
@@ -232,13 +259,13 @@ export const resetButton = style({
   height: "44px",
   fontSize: "14px",
   fontWeight: 500,
-  color: "#666",
-  backgroundColor: "#f3f4f6",
+  color: vars.color.textTertiary,
+  backgroundColor: vars.color.surfaceMuted,
   border: "none",
   borderRadius: "10px",
   cursor: "pointer",
   marginTop: "8px",
   ":active": {
-    backgroundColor: "#e5e7eb",
+    backgroundColor: vars.color.border,
   },
 });

@@ -1,4 +1,5 @@
 import { style } from "@vanilla-extract/css";
+import { vars } from "../styles/theme.css";
 
 // ── レイアウト ─────────────────────────────────────────────
 
@@ -6,7 +7,7 @@ export const container = style({
   minHeight: "100dvh",
   display: "flex",
   flexDirection: "column",
-  backgroundColor: "#fafafa",
+  backgroundColor: vars.color.bg,
 });
 
 export const header = style({
@@ -17,13 +18,13 @@ export const header = style({
 export const title = style({
   fontSize: "20px",
   fontWeight: 600,
-  color: "#1a1a1a",
+  color: vars.color.text,
   marginBottom: "4px",
 });
 
 export const subtitle = style({
   fontSize: "13px",
-  color: "#888",
+  color: vars.color.textMuted,
   marginBottom: "20px",
 });
 
@@ -41,22 +42,22 @@ export const stepDot = style({
   width: "8px",
   height: "8px",
   borderRadius: "50%",
-  backgroundColor: "#ddd",
+  backgroundColor: vars.color.borderInput,
   transition: "background-color 0.2s, transform 0.2s",
 });
 
 export const stepDotActive = style({
-  backgroundColor: "#6366f1",
+  backgroundColor: vars.color.accent,
   transform: "scale(1.3)",
 });
 
 export const stepDotDone = style({
-  backgroundColor: "#a5b4fc",
+  backgroundColor: vars.color.accentBorderStrong,
 });
 
 export const stepLabel = style({
   fontSize: "12px",
-  color: "#999",
+  color: vars.color.textFaint,
   marginLeft: "4px",
 });
 
@@ -75,19 +76,19 @@ export const label = style({
   display: "block",
   fontSize: "13px",
   fontWeight: 500,
-  color: "#555",
+  color: vars.color.textSecondary,
   marginBottom: "6px",
 });
 
 export const requiredBadge = style({
   fontSize: "11px",
-  color: "#ef4444",
+  color: vars.color.danger,
   marginLeft: "4px",
 });
 
 export const optionalBadge = style({
   fontSize: "11px",
-  color: "#999",
+  color: vars.color.textFaint,
   marginLeft: "4px",
 });
 
@@ -106,10 +107,10 @@ export const select = style({
   height: "48px",
   padding: "0 32px 0 12px",
   fontSize: "16px",
-  border: "1px solid #ddd",
+  border: `1px solid ${vars.color.borderInput}`,
   borderRadius: "10px",
-  backgroundColor: "#fff",
-  color: "#1a1a1a",
+  backgroundColor: vars.color.surface,
+  color: vars.color.text,
   appearance: "none",
   WebkitAppearance: "none",
   backgroundImage:
@@ -119,13 +120,13 @@ export const select = style({
   backgroundSize: "20px 20px",
   ":focus": {
     outline: "none",
-    borderColor: "#6366f1",
-    boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+    borderColor: vars.color.accent,
+    boxShadow: `0 0 0 3px ${vars.color.accentFocusRing}`,
   },
 });
 
 export const selectPlaceholder = style({
-  color: "#aaa",
+  color: vars.color.textDisabled,
 });
 
 export const input = style({
@@ -133,17 +134,17 @@ export const input = style({
   height: "48px",
   padding: "0 14px",
   fontSize: "16px",
-  border: "1px solid #ddd",
+  border: `1px solid ${vars.color.borderInput}`,
   borderRadius: "10px",
-  backgroundColor: "#fff",
-  color: "#1a1a1a",
+  backgroundColor: vars.color.surface,
+  color: vars.color.text,
   ":focus": {
     outline: "none",
-    borderColor: "#6366f1",
-    boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+    borderColor: vars.color.accent,
+    boxShadow: `0 0 0 3px ${vars.color.accentFocusRing}`,
   },
   "::placeholder": {
-    color: "#bbb",
+    color: vars.color.textPlaceholder,
   },
 });
 
@@ -155,8 +156,8 @@ export const romajiPreview = style({
   marginTop: "8px",
   padding: "10px 14px",
   fontSize: "14px",
-  color: "#555",
-  backgroundColor: "#f3f4f6",
+  color: vars.color.textSecondary,
+  backgroundColor: vars.color.surfaceMuted,
   borderRadius: "8px",
   letterSpacing: "0.05em",
   wordBreak: "break-all",
@@ -164,7 +165,7 @@ export const romajiPreview = style({
 
 export const romajiNote = style({
   fontSize: "11px",
-  color: "#999",
+  color: vars.color.textFaint,
   marginTop: "4px",
 });
 
@@ -179,8 +180,8 @@ export const styleCard = style({
   flex: 1,
   padding: "20px 16px",
   borderRadius: "12px",
-  border: "2px solid #e5e7eb",
-  backgroundColor: "#fff",
+  border: `2px solid ${vars.color.border}`,
+  backgroundColor: vars.color.surface,
   textAlign: "center",
   cursor: "pointer",
   transition: "border-color 0.15s, box-shadow 0.15s",
@@ -191,20 +192,20 @@ export const styleCard = style({
 });
 
 export const styleCardSelected = style({
-  borderColor: "#6366f1",
-  boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+  borderColor: vars.color.accent,
+  boxShadow: `0 0 0 3px ${vars.color.accentFocusRing}`,
 });
 
 export const styleCardLabel = style({
   fontSize: "15px",
   fontWeight: 600,
-  color: "#1a1a1a",
+  color: vars.color.text,
   marginBottom: "4px",
 });
 
 export const styleCardDesc = style({
   fontSize: "12px",
-  color: "#888",
+  color: vars.color.textMuted,
 });
 
 // ── ボタン群 ──────────────────────────────────────────────
@@ -221,13 +222,13 @@ export const backButton = style({
   padding: "0 20px",
   fontSize: "15px",
   fontWeight: 500,
-  color: "#666",
-  backgroundColor: "#f3f4f6",
+  color: vars.color.textTertiary,
+  backgroundColor: vars.color.surfaceMuted,
   border: "none",
   borderRadius: "12px",
   cursor: "pointer",
   ":active": {
-    backgroundColor: "#e5e7eb",
+    backgroundColor: vars.color.border,
   },
 });
 
@@ -236,17 +237,17 @@ export const nextButton = style({
   height: "48px",
   fontSize: "15px",
   fontWeight: 600,
-  color: "#fff",
-  backgroundColor: "#6366f1",
+  color: vars.color.onAccent,
+  backgroundColor: vars.color.accent,
   border: "none",
   borderRadius: "12px",
   cursor: "pointer",
   ":disabled": {
-    backgroundColor: "#c7d2fe",
+    backgroundColor: vars.color.accentBorder,
     cursor: "not-allowed",
   },
   ":active": {
-    backgroundColor: "#4f46e5",
+    backgroundColor: vars.color.accentStrong,
   },
 });
 
@@ -256,10 +257,10 @@ export const errorBanner = style({
   margin: "0 20px 16px",
   padding: "12px 14px",
   fontSize: "13px",
-  color: "#dc2626",
-  backgroundColor: "#fef2f2",
+  color: vars.color.misfortuneText,
+  backgroundColor: vars.color.misfortuneBg,
   borderRadius: "8px",
-  border: "1px solid #fecaca",
+  border: `1px solid ${vars.color.misfortuneBorder}`,
 });
 
 // ── 送信中オーバーレイ ──────────────────────────────────────
@@ -270,8 +271,8 @@ export const submittingOverlay = style({
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  backgroundColor: "rgba(255, 255, 255, 0.8)",
+  backgroundColor: vars.color.overlayScrim,
   zIndex: 100,
   fontSize: "15px",
-  color: "#555",
+  color: vars.color.textSecondary,
 });

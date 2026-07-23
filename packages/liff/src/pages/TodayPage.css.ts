@@ -1,4 +1,5 @@
 import { style } from "@vanilla-extract/css";
+import { vars } from "../styles/theme.css";
 
 // ── ページ全体 ────────────────────────────────────────────
 
@@ -8,14 +9,14 @@ export const container = style({
 
 export const dateHeader = style({
   fontSize: "14px",
-  color: "#888",
+  color: vars.color.textMuted,
   marginBottom: "4px",
 });
 
 export const pageTitle = style({
   fontSize: "20px",
   fontWeight: 600,
-  color: "#1a1a1a",
+  color: vars.color.text,
   marginBottom: "16px",
 });
 
@@ -26,7 +27,7 @@ export const loadingWrap = style({
   justifyContent: "center",
   alignItems: "center",
   minHeight: "40dvh",
-  color: "#888",
+  color: vars.color.textMuted,
   fontSize: "14px",
 });
 
@@ -42,7 +43,7 @@ export const errorWrap = style({
 
 export const errorText = style({
   fontSize: "14px",
-  color: "#dc2626",
+  color: vars.color.misfortuneText,
   textAlign: "center",
 });
 
@@ -50,20 +51,20 @@ export const retryButton = style({
   padding: "8px 20px",
   fontSize: "14px",
   fontWeight: 500,
-  color: "#6366f1",
-  backgroundColor: "#eef2ff",
-  border: "1px solid #c7d2fe",
+  color: vars.color.accent,
+  backgroundColor: vars.color.accentSubtle,
+  border: `1px solid ${vars.color.accentBorder}`,
   borderRadius: "8px",
   cursor: "pointer",
   ":active": {
-    backgroundColor: "#e0e7ff",
+    backgroundColor: vars.color.accentSubtleStrong,
   },
 });
 
 // ── 運勢テキストカード ───────────────────────────────────
 
 export const fortuneCard = style({
-  backgroundColor: "#fff",
+  backgroundColor: vars.color.surface,
   borderRadius: "16px",
   padding: "20px",
   marginBottom: "12px",
@@ -73,13 +74,13 @@ export const fortuneCard = style({
 export const fortuneText = style({
   fontSize: "14px",
   lineHeight: 1.7,
-  color: "#333",
+  color: vars.color.textBody,
   whiteSpace: "pre-wrap",
 });
 
 export const fortuneEmpty = style({
   fontSize: "13px",
-  color: "#999",
+  color: vars.color.textFaint,
   textAlign: "center",
   padding: "12px 0",
 });
@@ -94,7 +95,7 @@ export const starRow = style({
 
 export const starChip = style({
   flex: 1,
-  backgroundColor: "#fff",
+  backgroundColor: vars.color.surface,
   borderRadius: "10px",
   padding: "12px 14px",
   boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
@@ -103,7 +104,7 @@ export const starChip = style({
 export const starChipLabel = style({
   fontSize: "10px",
   fontWeight: 600,
-  color: "#999",
+  color: vars.color.textFaint,
   textTransform: "uppercase" as const,
   letterSpacing: "0.06em",
   marginBottom: "4px",
@@ -112,7 +113,7 @@ export const starChipLabel = style({
 export const starChipValue = style({
   fontSize: "16px",
   fontWeight: 600,
-  color: "#1a1a1a",
+  color: vars.color.text,
 });
 
 // ── 方位セクション ───────────────────────────────────────
@@ -120,7 +121,7 @@ export const starChipValue = style({
 export const sectionTitle = style({
   fontSize: "13px",
   fontWeight: 600,
-  color: "#555",
+  color: vars.color.textSecondary,
   marginBottom: "8px",
   marginTop: "16px",
 });
@@ -145,40 +146,40 @@ export const dirCell = style({
 });
 
 export const dirCellGreat = style({
-  backgroundColor: "#dcfce7",
-  border: "1px solid #bbf7d0",
+  backgroundColor: vars.color.fortuneGreatBg,
+  border: `1px solid ${vars.color.fortuneGreatBorder}`,
 });
 
 export const dirCellFortune = style({
-  backgroundColor: "#f0fdf4",
-  border: "1px solid #d1fae5",
+  backgroundColor: vars.color.fortuneBg,
+  border: `1px solid ${vars.color.fortuneBorder}`,
 });
 
 export const dirCellNeutral = style({
-  backgroundColor: "#f9fafb",
-  border: "1px solid #e5e7eb",
+  backgroundColor: vars.color.surfaceSubtle,
+  border: `1px solid ${vars.color.border}`,
 });
 
 export const dirCellMisfortune = style({
-  backgroundColor: "#fef2f2",
-  border: "1px solid #fecaca",
+  backgroundColor: vars.color.misfortuneBg,
+  border: `1px solid ${vars.color.misfortuneBorder}`,
 });
 
 export const dirLabel = style({
   fontSize: "11px",
   fontWeight: 600,
-  color: "#555",
+  color: vars.color.textSecondary,
 });
 
 export const dirStar = style({
   fontSize: "10px",
-  color: "#888",
+  color: vars.color.textMuted,
 });
 
 export const dirBadge = style({
   fontSize: "9px",
   fontWeight: 600,
-  color: "#dc2626",
+  color: vars.color.misfortuneText,
   marginTop: "2px",
   lineHeight: 1.2,
 });
@@ -186,7 +187,7 @@ export const dirBadge = style({
 export const dirBadgeGood = style({
   fontSize: "9px",
   fontWeight: 600,
-  color: "#16a34a",
+  color: vars.color.fortuneText,
   marginTop: "2px",
 });
 
@@ -196,7 +197,7 @@ export const tabRow = style({
   display: "flex",
   gap: "4px",
   marginBottom: "12px",
-  backgroundColor: "#f3f4f6",
+  backgroundColor: vars.color.surfaceMuted,
   borderRadius: "10px",
   padding: "3px",
 });
@@ -206,7 +207,7 @@ export const tab = style({
   padding: "8px 0",
   fontSize: "13px",
   fontWeight: 500,
-  color: "#666",
+  color: vars.color.textTertiary,
   backgroundColor: "transparent",
   border: "none",
   borderRadius: "8px",
@@ -216,8 +217,8 @@ export const tab = style({
 });
 
 export const tabActive = style({
-  backgroundColor: "#fff",
-  color: "#1a1a1a",
+  backgroundColor: vars.color.surface,
+  color: vars.color.text,
   fontWeight: 600,
   boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
 });
@@ -225,7 +226,7 @@ export const tabActive = style({
 // ── 未登録 ────────────────────────────────────────────────
 
 export const emptyCard = style({
-  backgroundColor: "#fff",
+  backgroundColor: vars.color.surface,
   borderRadius: "16px",
   padding: "32px 20px",
   marginBottom: "12px",
@@ -235,7 +236,7 @@ export const emptyCard = style({
 
 export const emptyText = style({
   fontSize: "14px",
-  color: "#888",
+  color: vars.color.textMuted,
   marginBottom: "16px",
 });
 
@@ -244,12 +245,12 @@ export const registerLink = style({
   padding: "10px 24px",
   fontSize: "14px",
   fontWeight: 600,
-  color: "#fff",
-  backgroundColor: "#6366f1",
+  color: vars.color.onAccent,
+  backgroundColor: vars.color.accent,
   borderRadius: "10px",
   textDecoration: "none",
   ":active": {
-    backgroundColor: "#4f46e5",
+    backgroundColor: vars.color.accentStrong,
   },
 });
 

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { vars } from "../styles/theme.css";
 
 interface LayoutProps {
   readonly children: ReactNode;
@@ -28,8 +29,8 @@ export function Layout({ children }: LayoutProps) {
           justifyContent: "space-around",
           alignItems: "center",
           height: "56px",
-          borderTop: "1px solid #e0e0e0",
-          backgroundColor: "#ffffff",
+          borderTop: `1px solid ${vars.color.borderFaint}`,
+          backgroundColor: vars.color.surface,
         }}
       >
         {navItems.map((item) => (
@@ -39,7 +40,7 @@ export function Layout({ children }: LayoutProps) {
             style={{
               fontSize: "12px",
               textAlign: "center",
-              color: location.pathname === item.to ? "#6366f1" : "#666666",
+              color: location.pathname === item.to ? vars.color.accent : vars.color.textTertiary,
               fontWeight: location.pathname === item.to ? 600 : 400,
             }}
           >

@@ -275,11 +275,7 @@ function HybridDisplay({
         />
         <div className={s.hybridCodeSmall}>{secondary}</div>
         <div className={s.hybridNameSmall}>{secondaryInfo?.typeName ?? secondary}</div>
-        {secondaryCharName && (
-          <div style={{ fontSize: "11px", color: "#6366f1", marginTop: "4px" }}>
-            {secondaryCharName}
-          </div>
-        )}
+        {secondaryCharName && <div className={s.hybridCharName}>{secondaryCharName}</div>}
       </div>
     </div>
   );
