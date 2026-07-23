@@ -2,6 +2,7 @@ import type { Direction8, DirectionFortune, MisfortuneType, StarNumber } from "@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
+import { useCharacterTheme } from "../components/CharacterTheme";
 import { DirectionMap } from "../components/direction-map";
 import * as s from "./TodayPage.css";
 
@@ -76,7 +77,14 @@ interface TodayResponse {
     year: DirectionItem[];
   };
   fortune: {
+    // 後方互換: 従来の単一テキスト(= 運勢セクション相当)
     text: string;
+    // 新: 3セクション。旧データ/パース不能なら null
+    sections: {
+      fortune: string;
+      schedule: string;
+      characterNote: string;
+    } | null;
     directionsJson: unknown;
   } | null;
 }
@@ -119,6 +127,7 @@ function fortuneLabel(fortune: DirectionFortune): string | null {
 
 export function TodayPage() {
   const navigate = useNavigate();
+  const { ownCharacterName } = useCharacterTheme();
   const [data, setData] = useState<TodayResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -146,7 +155,18 @@ export function TodayPage() {
   }, [fetchData]);
 
   if (loading) {
-    return <div className={s.loadingWrap}>読み込み中...</div>;
+    // 初回アクセスはサーバー側で運勢を同期生成するため数秒〜十数秒かかりうる。
+    // 固まって見えないよう、スピナー + 生成中である旨のメッセージを出す。
+    return (
+      <div className={s.loadingWrap}>
+        <div className={s.spinner} />
+        <p className={s.loadingText}>
+          今日のジャーナルを準備しています…
+          <br />
+          初回は少し時間がかかることがあります
+        </p>
+      </div>
+    );
   }
 
   if (error) {
@@ -190,13 +210,9 @@ export function TodayPage() {
         </div>
       </div>
 
-      {/* 運勢テキスト */}
+      {/* 運勢(3セクション → 単一テキスト → 準備中 の順にフォールバック) */}
       <div className={s.fortuneCard}>
-        {data.fortune ? (
-          <p className={s.fortuneText}>{data.fortune.text}</p>
-        ) : (
-          <p className={s.fortuneEmpty}>本日の運勢テキストはまだ生成されていません</p>
-        )}
+        <FortuneBody fortune={data.fortune} characterName={ownCharacterName} />
       </div>
 
       {/* 方位タブ切替 */}
@@ -228,6 +244,77 @@ export function TodayPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ── 運勢本文(3セクション表示) ───────────────────────────
+
+/**
+ * 運勢の本文を表示する。
+ *
+ * 1. fortune.sections があれば 3セクション(運勢 / スケジュール / キャラの一言)を縦表示。
+ *    セクション③の見出しはキャラ名を使い、取得できなければ汎用見出しにフォールバック。
+ * 2. sections が null で text があれば従来どおり単一テキスト(後方互換)。
+ * 3. fortune 自体が null(未生成/生成失敗)なら穏やかな「準備中」表示。
+ */
+function FortuneBody({
+  fortune,
+  characterName,
+}: {
+  fortune: TodayResponse["fortune"];
+  characterName: string | null;
+}) {
+  // 3. 未生成/生成失敗
+  if (!fortune) {
+    return (
+      <p className={s.fortuneEmpty}>
+        今日のジャーナルは準備中です。
+        <br />
+        しばらくしてからもう一度ご覧ください。
+      </p>
+    );
+  }
+
+  // 1. 3セクション
+  if (fortune.sections) {
+    const { fortune: fortuneText, schedule, characterNote } = fortune.sections;
+    const charHeading = characterName ? `${characterName}からの一言` : "キャラクターからの一言";
+    return (
+      <>
+        {fortuneText && (
+          <div className={s.fortuneSection}>
+            <div className={s.fortuneSectionTitle}>今日の運勢</div>
+            <p className={s.fortuneText}>{fortuneText}</p>
+          </div>
+        )}
+        {schedule && (
+          <div className={s.fortuneSection}>
+            <div className={s.fortuneSectionTitle}>今日のスケジュール</div>
+            <p className={s.fortuneText}>{schedule}</p>
+          </div>
+        )}
+        {characterNote && (
+          <div className={s.fortuneSection}>
+            <div className={s.fortuneSectionTitle}>{charHeading}</div>
+            <p className={s.fortuneCharBody}>{characterNote}</p>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // 2. 後方互換: 単一テキスト
+  if (fortune.text) {
+    return <p className={s.fortuneText}>{fortune.text}</p>;
+  }
+
+  // フォールバック(text も空)
+  return (
+    <p className={s.fortuneEmpty}>
+      今日のジャーナルは準備中です。
+      <br />
+      しばらくしてからもう一度ご覧ください。
+    </p>
   );
 }
 

@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { keyframes, style } from "@vanilla-extract/css";
 import { vars } from "../styles/theme.css";
 
 // ── ページ全体 ────────────────────────────────────────────
@@ -24,11 +24,33 @@ export const pageTitle = style({
 
 export const loadingWrap = style({
   display: "flex",
+  flexDirection: "column",
   justifyContent: "center",
   alignItems: "center",
   minHeight: "40dvh",
+  gap: "14px",
   color: vars.color.textMuted,
   fontSize: "14px",
+});
+
+const spin = keyframes({
+  to: { transform: "rotate(360deg)" },
+});
+
+// アクセント色のスピナー(初回アクセスは同期生成で数秒〜十数秒かかりうる)
+export const spinner = style({
+  width: "28px",
+  height: "28px",
+  borderRadius: "50%",
+  border: `3px solid ${vars.color.accentSubtleStrong}`,
+  borderTopColor: vars.color.accent,
+  animation: `${spin} 0.8s linear infinite`,
+});
+
+export const loadingText = style({
+  fontSize: "13px",
+  color: vars.color.textMuted,
+  textAlign: "center",
 });
 
 export const errorWrap = style({
@@ -83,6 +105,39 @@ export const fortuneEmpty = style({
   color: vars.color.textFaint,
   textAlign: "center",
   padding: "12px 0",
+});
+
+// ── 運勢3セクション(運勢 / スケジュール / キャラの一言) ─────
+// 1枚のカード内に3セクションを縦積みし、セクション間は極薄の仕切りで区切る。
+
+// 2番目以降のセクションに上マージン + 上罫線を付ける
+export const fortuneSection = style({
+  selectors: {
+    "& + &": {
+      marginTop: "16px",
+      paddingTop: "16px",
+      borderTop: `1px solid ${vars.color.borderHairline}`,
+    },
+  },
+});
+
+export const fortuneSectionTitle = style({
+  fontSize: "13px",
+  fontWeight: 600,
+  color: vars.color.accent,
+  marginBottom: "6px",
+});
+
+// キャラの一言セクションの見出し(アクセント色を少し弱める必要はないが、
+// 内容がキャラのトーンであることを示すため本文をアクセント淡背景で括る)
+export const fortuneCharBody = style({
+  fontSize: "14px",
+  lineHeight: 1.7,
+  color: vars.color.textBody,
+  whiteSpace: "pre-wrap",
+  backgroundColor: vars.color.accentSubtle,
+  borderRadius: "10px",
+  padding: "12px 14px",
 });
 
 // ── 九星情報 ──────────────────────────────────────────────

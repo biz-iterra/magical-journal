@@ -1,4 +1,5 @@
 import type { PotentialTypeId } from "@mj/engine";
+import { getCharacterName } from "@mj/engine";
 import {
   type ReactNode,
   createContext,
@@ -22,12 +23,19 @@ interface CharacterThemeContextValue {
   readonly themeType: PotentialTypeId | null;
   /** テーマを差し替える(友達診断の結果カード等で一時的に上書き)。 */
   readonly setThemeType: (typeId: PotentialTypeId | null) => void;
+  /**
+   * ログイン中ユーザー自身のキャラ名(主タイプ × charStyle)。未取得/未登録なら null。
+   * 「今日のページ」の「{キャラ名}からの一言」見出しなどで再利用する
+   * (取得元が無ければ呼び出し側で汎用見出しにフォールバックする)。
+   */
+  readonly ownCharacterName: string | null;
 }
 
 const CharacterThemeContext = createContext<CharacterThemeContextValue | null>(null);
 
 // /api/profile の必要部分のみ(MyTypePage と同形状)
 interface ProfileResponse {
+  profile?: { charStyle?: "male" | "female" };
   diagnosis: { moduleId: string; result: unknown }[];
 }
 
@@ -57,11 +65,16 @@ function readPrimaryType(res: ProfileResponse): PotentialTypeId | null {
 export function CharacterThemeProvider({ children }: { children: ReactNode }) {
   // baseType = ログイン中ユーザー自身のタイプ(profile 由来・固定)
   const [baseType, setBaseType] = useState<PotentialTypeId | null>(null);
+  // charStyle = ログイン中ユーザーの表示スタイル(キャラ名の男女差に使用)
+  const [charStyle, setCharStyle] = useState<"male" | "female" | null>(null);
   // overrideType = 友達診断の結果カード等による一時上書き
   const [overrideType, setOverrideType] = useState<PotentialTypeId | null>(null);
 
   // 実効テーマ: 上書きがあればそれ、無ければユーザー自身のテーマ
   const themeType = overrideType ?? baseType;
+
+  // ユーザー自身のキャラ名(主タイプ × charStyle)。override とは独立(常に本人の名前)。
+  const ownCharacterName = baseType && charStyle ? getCharacterName(baseType, charStyle) : null;
 
   // 起動時のパス(マウント時に一度だけ確定)。友達診断入口ならサーバー非接触にする。
   const initialPath = useRef(useLocation().pathname);
@@ -72,7 +85,9 @@ export function CharacterThemeProvider({ children }: { children: ReactNode }) {
     apiClient
       .get<ProfileResponse>("/api/profile")
       .then((res) => {
-        if (!cancelled) setBaseType(readPrimaryType(res));
+        if (cancelled) return;
+        setBaseType(readPrimaryType(res));
+        setCharStyle(res.profile?.charStyle ?? null);
       })
       .catch(() => {
         // 未登録・未認証など。既定インディゴのまま。
@@ -88,8 +103,8 @@ export function CharacterThemeProvider({ children }: { children: ReactNode }) {
   }, [themeType]);
 
   const value = useMemo<CharacterThemeContextValue>(
-    () => ({ themeType, setThemeType: setOverrideType }),
-    [themeType],
+    () => ({ themeType, setThemeType: setOverrideType, ownCharacterName }),
+    [themeType, ownCharacterName],
   );
 
   return <CharacterThemeContext.Provider value={value}>{children}</CharacterThemeContext.Provider>;
@@ -104,6 +119,7 @@ export function useCharacterTheme(): CharacterThemeContextValue {
     useContext(CharacterThemeContext) ?? {
       themeType: null,
       setThemeType: () => {},
+      ownCharacterName: null,
     }
   );
 }

@@ -3,6 +3,11 @@ import type { PotentialTypeId } from "@mj/engine";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
+import {
+  type PersonalityReport,
+  getPersonality,
+  regeneratePersonality,
+} from "../services/personality";
 import { characterImagePath } from "../utils/character-assets";
 import * as s from "./MyTypePage.css";
 
@@ -156,6 +161,9 @@ export function MyTypePage() {
       {/* ポテンシャルタイプ */}
       {potential && <PotentialSection data={potential.result} charStyle={charStyle} />}
 
+      {/* AI占い(性質レポート) */}
+      <AiFortuneSection />
+
       {/* 星座 */}
       {zodiac && <ZodiacSection data={zodiac.result as ZodiacResult} />}
 
@@ -183,6 +191,145 @@ export function MyTypePage() {
         <div className={s.card}>
           <p className={s.cardSub}>診断結果がまだありません。しばらくお待ちください。</p>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── AI占い(性質レポート)セクション ──────────────────────
+
+// 表示する6項目の順序と見出し(この順・この見出しで固定)。
+const REPORT_ITEMS: ReadonlyArray<{ key: keyof PersonalityReport["items"]; label: string }> = [
+  { key: "basicNature", label: "基本的な性質" },
+  { key: "workStrength", label: "仕事上の強み" },
+  { key: "workWeakness", label: "仕事上の弱み" },
+  { key: "socialTendency", label: "人付き合いの傾向" },
+  { key: "goodAt", label: "得意なこと" },
+  { key: "badAt", label: "苦手なこと" },
+];
+
+/**
+ * AI占い(性質レポート)セクション。
+ *
+ * - 主動線: 「AI占い」ボタンで事前生成済みレポート(GET /api/personality)を表示する。
+ * - 未生成(report=null)なら「準備中」を表示する。
+ * - 副次: レポート内の「再生成」ボタン(β品質テスト用)で POST /api/personality/regenerate。
+ *   レート制限超過は 429 + MJ-PERS-429 →「メッセージ(コード)」形式で表示する。
+ */
+function AiFortuneSection() {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false); // 一度でも取得完了したか(null=準備中 と未取得を区別)
+  const [report, setReport] = useState<PersonalityReport | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
+
+  const openAndFetch = useCallback(async () => {
+    setOpen(true);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getPersonality();
+      setReport(res);
+      setLoaded(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "レポートの取得に失敗しました");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const regenerate = useCallback(async () => {
+    setRegenerating(true);
+    setError(null);
+    try {
+      const res = await regeneratePersonality();
+      setReport(res);
+      setLoaded(true);
+    } catch (err) {
+      // ApiError の message は「メッセージ(コード)」形式に整形済み(例: MJ-PERS-429)。
+      setError(err instanceof Error ? err.message : "再生成に失敗しました");
+    } finally {
+      setRegenerating(false);
+    }
+  }, []);
+
+  // 未展開: 主動線ボタンのみ
+  if (!open) {
+    return (
+      <button type="button" className={s.aiButton} onClick={openAndFetch}>
+        AI占い
+        <span className={s.aiButtonSub}>あなたの性質レポートを見る</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className={s.reportCard}>
+      {loading ? (
+        <div className={s.reportLoadingWrap}>
+          <div className={s.spinner} />
+          <p className={s.reportEmpty}>レポートを読み込んでいます…</p>
+        </div>
+      ) : report ? (
+        <>
+          <div className={s.reportHeaderRow}>
+            <div>
+              <div className={s.reportBadge}>AI占い</div>
+              <div className={s.reportTitle}>{report.typeName}</div>
+              <div className={s.reportSubtitle}>{report.zodiacName}</div>
+            </div>
+          </div>
+
+          {REPORT_ITEMS.map(({ key, label }) => {
+            const text = report.items[key];
+            if (!text) return null;
+            return (
+              <div key={key} className={s.reportItem}>
+                <div className={s.reportItemLabel}>{label}</div>
+                <p className={s.reportItemText}>{text}</p>
+              </div>
+            );
+          })}
+
+          {/* 再生成(β品質テスト用の副次操作) */}
+          <div className={s.regenRow}>
+            {error && <p className={s.reportErrorText}>{error}</p>}
+            <button
+              type="button"
+              className={s.regenButton}
+              onClick={regenerate}
+              disabled={regenerating}
+            >
+              {regenerating && <span className={s.spinnerSmall} />}
+              {regenerating ? "再生成中…" : "再生成(テスト用)"}
+            </button>
+            <p className={s.regenNote}>β版の品質テスト用です(1日5回まで)</p>
+          </div>
+        </>
+      ) : (
+        // report=null: 準備中、または取得エラー
+        <>
+          {error ? (
+            <p className={s.reportErrorText}>{error}</p>
+          ) : loaded ? (
+            <p className={s.reportEmpty}>
+              性質レポートは準備中です。
+              <br />
+              登録直後は生成中の場合があります。しばらくしてからお試しください。
+            </p>
+          ) : null}
+          <div className={s.regenRow}>
+            <button
+              type="button"
+              className={s.regenButton}
+              onClick={openAndFetch}
+              disabled={loading}
+            >
+              再読み込み
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

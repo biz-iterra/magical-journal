@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { keyframes, style } from "@vanilla-extract/css";
 import { vars } from "../styles/theme.css";
 
 // ── ページ全体 ────────────────────────────────────────────
@@ -255,4 +255,187 @@ export const masterBadge = style({
   padding: "2px 6px",
   marginLeft: "8px",
   verticalAlign: "middle",
+});
+
+// ── AI占い(性質レポート) ────────────────────────────────
+
+// 事前生成済みレポートを見るための主動線ボタン(アクセントの塗り)。
+export const aiButton = style({
+  width: "100%",
+  padding: "14px 20px",
+  fontSize: "15px",
+  fontWeight: 600,
+  color: vars.color.onAccent,
+  backgroundColor: vars.color.accent,
+  border: "none",
+  borderRadius: "12px",
+  cursor: "pointer",
+  marginBottom: "12px",
+  ":active": {
+    backgroundColor: vars.color.accentStrong,
+  },
+  ":disabled": {
+    opacity: 0.6,
+    cursor: "default",
+  },
+});
+
+export const aiButtonSub = style({
+  display: "block",
+  fontSize: "11px",
+  fontWeight: 500,
+  color: vars.color.onAccent,
+  opacity: 0.85,
+  marginTop: "2px",
+});
+
+// レポート本体カード
+export const reportCard = style({
+  backgroundColor: vars.color.surface,
+  borderRadius: "16px",
+  padding: "20px",
+  marginBottom: "12px",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+});
+
+export const reportHeaderRow = style({
+  display: "flex",
+  alignItems: "baseline",
+  justifyContent: "space-between",
+  gap: "8px",
+  marginBottom: "16px",
+});
+
+export const reportBadge = style({
+  fontSize: "11px",
+  fontWeight: 600,
+  color: vars.color.accent,
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.08em",
+});
+
+export const reportTitle = style({
+  fontSize: "18px",
+  fontWeight: 700,
+  color: vars.color.text,
+  lineHeight: 1.3,
+});
+
+export const reportSubtitle = style({
+  fontSize: "13px",
+  color: vars.color.textSecondary,
+  marginTop: "2px",
+});
+
+// 6項目
+export const reportItem = style({
+  selectors: {
+    "& + &": {
+      marginTop: "16px",
+      paddingTop: "16px",
+      borderTop: `1px solid ${vars.color.borderHairline}`,
+    },
+  },
+});
+
+export const reportItemLabel = style({
+  fontSize: "13px",
+  fontWeight: 600,
+  color: vars.color.accent,
+  marginBottom: "6px",
+});
+
+export const reportItemText = style({
+  fontSize: "14px",
+  lineHeight: 1.7,
+  color: vars.color.textBody,
+  whiteSpace: "pre-wrap",
+});
+
+// 準備中 / エラー
+export const reportEmpty = style({
+  fontSize: "13px",
+  lineHeight: 1.7,
+  color: vars.color.textMuted,
+  textAlign: "center",
+  padding: "12px 4px",
+});
+
+export const reportErrorText = style({
+  fontSize: "13px",
+  color: vars.color.misfortuneText,
+  textAlign: "center",
+  padding: "8px 4px",
+});
+
+// 再生成(β品質テスト用の副次ボタン。主ボタンに見せないよう地味な体裁にする)
+export const regenRow = style({
+  marginTop: "18px",
+  paddingTop: "14px",
+  borderTop: `1px solid ${vars.color.borderHairline}`,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "6px",
+});
+
+export const regenNote = style({
+  fontSize: "11px",
+  color: vars.color.textFaint,
+  textAlign: "center",
+});
+
+export const regenButton = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "8px",
+  padding: "7px 16px",
+  fontSize: "12px",
+  fontWeight: 500,
+  color: vars.color.textTertiary,
+  backgroundColor: vars.color.surfaceSubtle,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: "8px",
+  cursor: "pointer",
+  ":active": {
+    backgroundColor: vars.color.surfaceMuted,
+  },
+  ":disabled": {
+    opacity: 0.6,
+    cursor: "default",
+  },
+});
+
+// ── レポート内スピナー ────────────────────────────────────
+
+const spin = keyframes({
+  to: { transform: "rotate(360deg)" },
+});
+
+export const reportLoadingWrap = style({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "12px",
+  padding: "16px 4px",
+});
+
+export const spinner = style({
+  width: "24px",
+  height: "24px",
+  borderRadius: "50%",
+  border: `3px solid ${vars.color.accentSubtleStrong}`,
+  borderTopColor: vars.color.accent,
+  animation: `${spin} 0.8s linear infinite`,
+});
+
+// 再生成ボタン内の小スピナー(currentColor でボタン文字色に追従)
+export const spinnerSmall = style({
+  width: "13px",
+  height: "13px",
+  borderRadius: "50%",
+  border: "2px solid transparent",
+  borderTopColor: "currentColor",
+  borderRightColor: "currentColor",
+  animation: `${spin} 0.7s linear infinite`,
 });
