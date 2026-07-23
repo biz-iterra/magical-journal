@@ -1,0 +1,167 @@
+/**
+ * キャラのトーン(語り口)定義取り込みスクリプト
+ * (docs/01 §キャラアセット取り込みパイプライン / §夜間バッチのフロー3)
+ *
+ * キャラリポジトリ(一次情報)の profile.yaml から「語り口(トーン)」に必要な
+ * 項目だけを抽出し、夜間バッチがバンドルできる TS モジュールとして出力する。
+ *
+ *   出力先: packages/batch/src/data/personas.generated.ts
+ *
+ * 抽出する項目(語り口=キャラが正の範囲に限定):
+ *   - variants.{male,female}.name / pronoun / speech_style.tone / speech_style.examples
+ *   - catchphrase / personality_core(キャラの人格・世界観)
+ * タイプ名(診断内容=タイプ仕様が正)は engine の CHARACTER_MAP(docs/04 適用済み)から取る。
+ *
+ * ★著作権ガード: profile.yaml の `axes`(3軸=内部設計用)は公開物・プロンプトに
+ *   絶対に含めない。本スクリプトは axes を一切読まない/出力しない。
+ *   strengths / weaknesses など診断寄りの項目もトーン注入には使わないため出力しない。
+ *
+ * - 冪等: 再実行で常に上書き(キーはソートして安定 diff にする)
+ * - 失敗したキャラはスキップして続行し、最後に失敗一覧を表示する
+ *
+ * 使い方:
+ *   node scripts/import-personas.mjs [キャラリポジトリの characters ディレクトリ]
+ *   (省略時: 環境変数 CHAR_REPO_DIR → 既定 ../journal-character-generator/characters)
+ *
+ * 前提: packages/engine がビルド済み(dist/index.js が存在)であること。
+ */
+
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { load as yamlLoad } from "js-yaml";
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+const DEFAULT_SOURCE = resolve(ROOT, "..", "journal-character-generator", "characters");
+const ENGINE_DIST = resolve(ROOT, "packages", "engine", "dist", "index.js");
+const OUTPUT_FILE = join(ROOT, "packages", "batch", "src", "data", "personas.generated.ts");
+
+/** CHARACTER_MAP.directoryKey("characters/01-hikaru/") → "01-hikaru" */
+function directoryKeyToDir(directoryKey) {
+  return directoryKey.replace(/^characters\//, "").replace(/\/$/, "");
+}
+
+function asStringArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v) => typeof v === "string" && v.trim().length > 0);
+}
+
+async function loadCharacterMap() {
+  if (!existsSync(ENGINE_DIST)) {
+    console.error(`[import-personas] engine のビルド成果物が見つかりません: ${ENGINE_DIST}`);
+    console.error("先に `pnpm --filter @mj/engine build` を実行してください");
+    process.exit(1);
+  }
+  const engine = await import(`file://${ENGINE_DIST.replace(/\\/g, "/")}`);
+  if (!engine.CHARACTER_MAP) {
+    console.error("[import-personas] engine が CHARACTER_MAP をエクスポートしていません");
+    process.exit(1);
+  }
+  return engine.CHARACTER_MAP;
+}
+
+/**
+ * profile.yaml から 1 キャラ分(male/female)のペルソナを抽出する。
+ * axes は読まない。
+ */
+function extractPersonas(typeId, typeName, profile) {
+  const catchphrase = typeof profile.catchphrase === "string" ? profile.catchphrase : "";
+  const personalityCore = asStringArray(profile.personality_core);
+  const variants = profile.variants ?? {};
+
+  const result = [];
+  for (const style of ["male", "female"]) {
+    const v = variants[style];
+    if (!v || typeof v.name !== "string") {
+      throw new Error(`variants.${style}.name が無い`);
+    }
+    const speech = v.speech_style ?? {};
+    result.push({
+      key: `${typeId}:${style}`,
+      persona: {
+        typeId,
+        typeName,
+        style,
+        name: v.name,
+        pronoun: typeof v.pronoun === "string" ? v.pronoun : "",
+        tone: typeof speech.tone === "string" ? speech.tone : "",
+        speechExamples: asStringArray(speech.examples),
+        catchphrase,
+        personalityCore,
+      },
+    });
+  }
+  return result;
+}
+
+async function main() {
+  const sourceDir = resolve(process.argv[2] ?? process.env.CHAR_REPO_DIR ?? DEFAULT_SOURCE);
+
+  if (!existsSync(sourceDir)) {
+    console.error(`[import-personas] キャラリポジトリが見つかりません: ${sourceDir}`);
+    console.error("パスを引数か CHAR_REPO_DIR で指定してください");
+    process.exit(1);
+  }
+
+  const characterMap = await loadCharacterMap();
+
+  console.log(`[import-personas] 取り込み元: ${sourceDir}`);
+  console.log(`[import-personas] 出力先: ${OUTPUT_FILE}`);
+
+  /** @type {Record<string, unknown>} */
+  const personas = {};
+  const failures = [];
+  let count = 0;
+
+  for (const info of characterMap.values()) {
+    const dir = directoryKeyToDir(info.directoryKey);
+    const yamlPath = join(sourceDir, dir, "profile.yaml");
+    try {
+      if (!existsSync(yamlPath)) {
+        throw new Error(`profile.yaml が無い (${yamlPath})`);
+      }
+      const profile = yamlLoad(readFileSync(yamlPath, "utf8"));
+      if (!profile || typeof profile !== "object") {
+        throw new Error("profile.yaml のパース結果が不正");
+      }
+      for (const { key, persona } of extractPersonas(info.typeId, info.typeName, profile)) {
+        personas[key] = persona;
+        count += 1;
+        console.log(`  ok: ${key} (${persona.name})`);
+      }
+    } catch (err) {
+      failures.push(`${info.typeId} (${dir}): ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // キーをソートして安定した diff にする
+  const sortedKeys = Object.keys(personas).sort();
+  const sorted = {};
+  for (const k of sortedKeys) sorted[k] = personas[k];
+
+  const banner = [
+    "// AUTO-GENERATED by scripts/import-personas.mjs — 手で編集しないこと。",
+    "// 一次情報: journal-character-generator/characters/NN-name/profile.yaml",
+    "// 著作権ガード: axes(3軸)は意図的に含めていない。",
+    "",
+  ].join("\n");
+  const body = `${banner}import type { Persona } from "./personas.js";\n\nexport const PERSONAS: Record<string, Persona> = ${JSON.stringify(sorted, null, 2)};\n`;
+
+  mkdirSync(dirname(OUTPUT_FILE), { recursive: true });
+  writeFileSync(OUTPUT_FILE, body, "utf8");
+
+  console.log(`[import-personas] 生成: ${count} バリアント / ${sortedKeys.length} エントリ`);
+  if (failures.length > 0) {
+    console.error(`[import-personas] 失敗: ${failures.length} 件`);
+    for (const f of failures) console.error(`  - ${f}`);
+    process.exit(1);
+  }
+}
+
+main().catch((err) => {
+  console.error(
+    `[import-personas] 予期しないエラー: ${err instanceof Error ? err.stack : String(err)}`,
+  );
+  process.exit(1);
+});

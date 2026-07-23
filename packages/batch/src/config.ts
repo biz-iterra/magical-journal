@@ -1,0 +1,83 @@
+/**
+ * バッチの環境変数読み取りと検証。
+ * シークレットはすべて .env + Docker env 経由で注入する(コードに含めない)。
+ */
+
+/** LLM プロバイダ種別 */
+export type LlmProviderKind = "claude" | "openai" | "mock";
+
+export interface BatchConfig {
+  /** SQLite データベースファイルパス(api と共有) */
+  readonly databasePath: string;
+  /** 使用する LLM プロバイダ */
+  readonly llmProvider: LlmProviderKind;
+  /** Anthropic API キー(claude 使用時のみ必須) */
+  readonly anthropicApiKey: string;
+  /** OpenAI API キー(openai 使用時のみ必須) */
+  readonly openaiApiKey: string;
+  /** Claude モデル名(既定は現行 Sonnet)。config で差し替え可能 */
+  readonly claudeModel: string;
+  /** OpenAI モデル名(既定は現行)。config で差し替え可能 */
+  readonly openaiModel: string;
+  /** 生成の最大トークン数 */
+  readonly llmMaxTokens: number;
+  /** 夜間バッチの cron 式(既定 03:00) */
+  readonly dailyCron: string;
+  /** cron のタイムゾーン(暦は JST 前提) */
+  readonly cronTimezone: string;
+}
+
+/** 既定モデル(最新モデル。環境変数で差し替え可能) */
+const DEFAULT_CLAUDE_MODEL = "claude-sonnet-5";
+const DEFAULT_OPENAI_MODEL = "gpt-5";
+const DEFAULT_MAX_TOKENS = 1024;
+const DEFAULT_DAILY_CRON = "0 3 * * *";
+const DEFAULT_TIMEZONE = "Asia/Tokyo";
+
+let cached: BatchConfig | undefined;
+
+function parseProvider(raw: string | undefined): LlmProviderKind {
+  const v = (raw ?? "claude").trim().toLowerCase();
+  if (v === "claude" || v === "openai" || v === "mock") {
+    return v;
+  }
+  throw new Error(`LLM_PROVIDER must be one of claude|openai|mock (got "${raw ?? ""}")`);
+}
+
+/**
+ * 環境変数を読み取り、検証して返す。2 回目以降はキャッシュを返す。
+ * API キーの存在チェックはプロバイダ生成時(factory)に行う。
+ */
+export function getConfig(): BatchConfig {
+  if (cached) return cached;
+
+  const databasePath = process.env.DATABASE_PATH;
+  if (!databasePath) {
+    throw new Error("DATABASE_PATH is required");
+  }
+
+  const llmMaxTokensRaw = process.env.LLM_MAX_TOKENS;
+  const llmMaxTokens = llmMaxTokensRaw ? Number(llmMaxTokensRaw) : DEFAULT_MAX_TOKENS;
+  if (!Number.isInteger(llmMaxTokens) || llmMaxTokens < 1) {
+    throw new Error("LLM_MAX_TOKENS must be a positive integer");
+  }
+
+  cached = {
+    databasePath,
+    llmProvider: parseProvider(process.env.LLM_PROVIDER),
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
+    openaiApiKey: process.env.OPENAI_API_KEY ?? "",
+    claudeModel: process.env.CLAUDE_MODEL?.trim() || DEFAULT_CLAUDE_MODEL,
+    openaiModel: process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL,
+    llmMaxTokens,
+    dailyCron: process.env.DAILY_CRON?.trim() || DEFAULT_DAILY_CRON,
+    cronTimezone: process.env.CRON_TIMEZONE?.trim() || DEFAULT_TIMEZONE,
+  };
+
+  return cached;
+}
+
+/** テスト用: キャッシュをクリアする */
+export function resetConfigCache(): void {
+  cached = undefined;
+}

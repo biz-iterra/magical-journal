@@ -31,6 +31,12 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER:-claude}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # モデル・生成・スケジュールは未設定ならコンテナ内の既定値を使用
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-}
+      - DAILY_CRON=${DAILY_CRON:-}
+      - CRON_TIMEZONE=${CRON_TIMEZONE:-}
       - ALLOWED_LINE_USER_IDS=${ALLOWED_LINE_USER_IDS}
     volumes:
       - db-data:/data

@@ -24,6 +24,12 @@
     }
   },
   "files": {
-    "ignore": ["dist/", "node_modules/", "packages/calendar-data/generated/", ".claude/worktrees/"]
+    "ignore": [
+      "dist/",
+      "node_modules/",
+      "packages/calendar-data/generated/",
+      "packages/batch/src/data/personas.generated.ts",
+      ".claude/worktrees/"
+    ]
   }
 }
