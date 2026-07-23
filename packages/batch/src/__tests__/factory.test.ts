@@ -12,6 +12,7 @@ function baseConfig(overrides: Partial<BatchConfig>): BatchConfig {
     openaiModel: "gpt-5",
     llmMaxTokens: 1024,
     dailyCron: "0 3 * * *",
+    monthlyCron: "30 3 1 * *",
     cronTimezone: "Asia/Tokyo",
     ...overrides,
   };

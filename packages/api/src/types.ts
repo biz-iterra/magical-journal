@@ -55,6 +55,16 @@ export interface DailyFortuneRow {
   readonly created_at: string;
 }
 
+export interface MonthlyFortuneRow {
+  readonly id: number;
+  readonly user_id: number;
+  readonly kigaku_year: number;
+  readonly kigaku_month: number;
+  readonly directions_json: string | null;
+  readonly fortune_text: string | null;
+  readonly created_at: string;
+}
+
 // ── API リクエスト型 ────────────────────────────────────────
 
 export interface RegisterBody {

@@ -23,6 +23,8 @@ export interface BatchConfig {
   readonly llmMaxTokens: number;
   /** 夜間バッチの cron 式(既定 03:00) */
   readonly dailyCron: string;
+  /** 月次バッチの cron 式(既定 毎月1日 03:30)。気学月キーで冪等なため日次で回しても安全 */
+  readonly monthlyCron: string;
   /** cron のタイムゾーン(暦は JST 前提) */
   readonly cronTimezone: string;
 }
@@ -32,6 +34,7 @@ const DEFAULT_CLAUDE_MODEL = "claude-sonnet-5";
 const DEFAULT_OPENAI_MODEL = "gpt-5";
 const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_DAILY_CRON = "0 3 * * *";
+const DEFAULT_MONTHLY_CRON = "30 3 1 * *";
 const DEFAULT_TIMEZONE = "Asia/Tokyo";
 
 let cached: BatchConfig | undefined;
@@ -71,6 +74,7 @@ export function getConfig(): BatchConfig {
     openaiModel: process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL,
     llmMaxTokens,
     dailyCron: process.env.DAILY_CRON?.trim() || DEFAULT_DAILY_CRON,
+    monthlyCron: process.env.MONTHLY_CRON?.trim() || DEFAULT_MONTHLY_CRON,
     cronTimezone: process.env.CRON_TIMEZONE?.trim() || DEFAULT_TIMEZONE,
   };
 

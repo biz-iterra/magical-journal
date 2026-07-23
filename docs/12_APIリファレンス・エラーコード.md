@@ -130,6 +130,33 @@
 今日の日盤・方位判定・当日運勢を返す。応答に `homeLatLng`(方位マップ中心)、`dayBan`、`directions.{day,month,year}`、`fortune` を含む。
 主なエラー: `MJ-USER-404`, `MJ-PROFILE-404`
 
+### GET /api/monthly
+今月(気学月=節入り基準)の月盤・月方位判定・月運を返す。キーは実行日から求めた気学年・気学月。
+月方位は engine でリアルタイム算出し、月運テキストは月次バッチが事前生成したものを返す(未生成なら `fortune: null`)。
+
+応答:
+```json
+{
+  "date": "2026-07-23",             // 実行日(JST)
+  "kigakuYear": 2026,               // 気学年(節入り基準)
+  "kigakuMonth": 7,                 // 気学月 1〜12(節入り基準。カレンダー月とはずれる)
+  "honmeiStar": 1, "getsumeiStar": 6,
+  "homeLatLng": { "lat": 35.69, "lng": 139.70 },   // または null
+  "monthBan": { "center": 5, "positions": { "N": 4, "NE": 9, "…": 0 } },
+  "directions": {
+    "month": [                      // 8方位ぶんの判定結果(engine DirectionResult)
+      { "direction": "N", "star": 4, "fortune": "fortune", "misfortunes": [] }
+    ]
+  },
+  "fortune": {                      // 月次バッチ未生成なら null
+    "text": "…今月の運勢文…",
+    "directionsJson": { "…": "保存済み構造化データ(MonthlyStructured)" }
+  }
+}
+```
+`fortune` は `null` になり得る(初回の気学月でまだ月次バッチが走っていない場合)。方位マップ・月盤は `fortune` の有無に関わらず常に返る。
+主なエラー: `MJ-USER-404`, `MJ-PROFILE-404`
+
 ### GET /api/profile
 プロフィール + 全診断結果(`diagnosis[]`)を返す。
 主なエラー: `MJ-USER-404`, `MJ-PROFILE-404`

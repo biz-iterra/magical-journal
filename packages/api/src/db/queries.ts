@@ -3,7 +3,13 @@
  * 各テーブルの CRUD 操作を提供する。
  */
 
-import type { DailyFortuneRow, DiagResultRow, ProfileRow, UserRow } from "../types.js";
+import type {
+  DailyFortuneRow,
+  DiagResultRow,
+  MonthlyFortuneRow,
+  ProfileRow,
+  UserRow,
+} from "../types.js";
 import { getDb } from "./connection.js";
 
 // ── users ───────────────────────────────────────────────────
@@ -187,4 +193,21 @@ export function getDailyFortune(userId: number, date: string): DailyFortuneRow |
   const db = getDb();
   const stmt = db.prepare("SELECT * FROM daily_fortunes WHERE user_id = ? AND date = ?");
   return stmt.get(userId, date) as DailyFortuneRow | undefined;
+}
+
+// ── monthly_fortunes ────────────────────────────────────────
+
+/**
+ * 指定した気学年・気学月の月次運勢を返す(節入り基準のキー)。
+ */
+export function getMonthlyFortune(
+  userId: number,
+  kigakuYear: number,
+  kigakuMonth: number,
+): MonthlyFortuneRow | undefined {
+  const db = getDb();
+  const stmt = db.prepare(
+    "SELECT * FROM monthly_fortunes WHERE user_id = ? AND kigaku_year = ? AND kigaku_month = ?",
+  );
+  return stmt.get(userId, kigakuYear, kigakuMonth) as MonthlyFortuneRow | undefined;
 }

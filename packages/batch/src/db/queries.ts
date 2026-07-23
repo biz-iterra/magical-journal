@@ -48,3 +48,44 @@ export function saveDailyFortune(
        created_at = datetime('now')`,
   ).run(userId, date, directionsJson, fortuneText);
 }
+
+/**
+ * monthly_fortunes に upsert する(UNIQUE(user_id, kigaku_year, kigaku_month))。
+ * キーは節入り基準の気学年・気学月。
+ */
+export function saveMonthlyFortune(
+  userId: number,
+  kigakuYear: number,
+  kigakuMonth: number,
+  directionsJson: string | null,
+  fortuneText: string | null,
+): void {
+  const db = getDb();
+  db.prepare(
+    `INSERT INTO monthly_fortunes (user_id, kigaku_year, kigaku_month, directions_json, fortune_text)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(user_id, kigaku_year, kigaku_month) DO UPDATE SET
+       directions_json = excluded.directions_json,
+       fortune_text = excluded.fortune_text,
+       created_at = datetime('now')`,
+  ).run(userId, kigakuYear, kigakuMonth, directionsJson, fortuneText);
+}
+
+/**
+ * 当該気学月の月次運勢が既に存在するかを返す(冪等性チェック用)。
+ */
+export function hasMonthlyFortune(
+  userId: number,
+  kigakuYear: number,
+  kigakuMonth: number,
+): boolean {
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT 1 FROM monthly_fortunes
+        WHERE user_id = ? AND kigaku_year = ? AND kigaku_month = ?
+        LIMIT 1`,
+    )
+    .get(userId, kigakuYear, kigakuMonth);
+  return row !== undefined;
+}

@@ -81,6 +81,20 @@ CREATE TABLE IF NOT EXISTS daily_fortunes (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(user_id, date)
 );
+
+-- 月次運勢(月次バッチ生成)
+-- キーは「気学の年・月」(節入り基準)。カレンダー月とは境界がずれるため、
+-- 節入りをまたいでも 1 気学月 = 1 エントリになるよう kigaku_year/kigaku_month を UNIQUE にする。
+CREATE TABLE IF NOT EXISTS monthly_fortunes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  kigaku_year INTEGER NOT NULL,
+  kigaku_month INTEGER NOT NULL,
+  directions_json TEXT,
+  fortune_text TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(user_id, kigaku_year, kigaku_month)
+);
 `;
 
 /**

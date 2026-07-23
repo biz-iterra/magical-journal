@@ -9,6 +9,7 @@ import { getEnv } from "./env.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { errorHandler } from "./middleware/error.js";
 import diagnosis from "./routes/diagnosis.js";
+import monthly from "./routes/monthly.js";
 import postal from "./routes/postal.js";
 import profile from "./routes/profile.js";
 import register from "./routes/register.js";
@@ -69,5 +70,6 @@ app.route("/api/profile", profile);
 app.route("/api/diagnosis", diagnosis);
 app.route("/api/postal", postal);
 app.route("/api/today", today);
+app.route("/api/monthly", monthly);
 
 export default app;
