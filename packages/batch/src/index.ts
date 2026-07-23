@@ -163,7 +163,19 @@ async function main(): Promise<void> {
 
   if (command === undefined) {
     startScheduler();
-    return; // 常駐
+    // node-cron v4 は schedule 登録だけではイベントループを保持しないため、
+    // 明示的にプロセスを常駐させる(未解決 Promise で待機)。
+    // SIGTERM/SIGINT(docker stop 等)で正常終了する。
+    await new Promise<void>((resolve) => {
+      const shutdown = () => {
+        console.log("[batch] シャットダウン signal を受信。終了します。");
+        closeDb();
+        resolve();
+      };
+      process.once("SIGTERM", shutdown);
+      process.once("SIGINT", shutdown);
+    });
+    return;
   }
 
   console.error(`[batch] 未知のコマンド: ${command}`);
