@@ -10,6 +10,14 @@ export interface AppEnvVars {
   readonly databasePath: string;
   /** LINE Login チャネル ID(IDトークン検証用) */
   readonly lineLoginChannelId: string;
+  /** LINE Messaging API チャネルシークレット(Webhook 署名検証用。未設定なら Webhook は 503) */
+  readonly lineChannelSecret: string;
+  /** LINE Messaging API チャネルアクセストークン(reply 送信用) */
+  readonly lineChannelAccessToken: string;
+  /** LIFF ID(Flex カードのディープリンク https://liff.line.me/{LIFF_ID}{path} 用。未設定ならボタン省略) */
+  readonly liffId: string;
+  /** キャラ画像の公開ベース URL(末尾スラッシュなし。未設定なら Flex の画像を省略) */
+  readonly publicAssetBaseUrl: string;
   /** 許可済み LINE ユーザー ID のリスト */
   readonly allowedLineUserIds: readonly string[];
   /** CORS で追加許可するオリジンのリスト(カンマ区切り。既定の *.pages.dev / *.workers.dev / localhost に加算) */
@@ -47,6 +55,17 @@ export function getEnv(): AppEnvVars {
     throw new Error("LINE_LOGIN_CHANNEL_ID is required in production");
   }
 
+  // Messaging API 系(Webhook)。API サーバー全体を落とさないため、未設定でも
+  // 起動は許容する(LIFF 認証エンドポイントは動く)。Webhook ルート側で
+  // シークレット未設定なら 503 を返し、署名検証なしでイベント処理はしない。
+  const lineChannelSecret = process.env.LINE_CHANNEL_SECRET ?? "";
+  const lineChannelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN ?? "";
+
+  // Flex カードのディープリンク・画像 URL。未設定でも Webhook は落とさず、
+  // リンク/画像を省略したフォールバックのカードを返す。
+  const liffId = process.env.LIFF_ID ?? "";
+  const publicAssetBaseUrl = (process.env.PUBLIC_ASSET_BASE_URL ?? "").replace(/\/+$/, "");
+
   const allowedRaw = process.env.ALLOWED_LINE_USER_IDS ?? "";
   const allowedLineUserIds = allowedRaw
     .split(",")
@@ -63,6 +82,10 @@ export function getEnv(): AppEnvVars {
     port,
     databasePath,
     lineLoginChannelId,
+    lineChannelSecret,
+    lineChannelAccessToken,
+    liffId,
+    publicAssetBaseUrl,
     allowedLineUserIds,
     allowedOrigins,
     nodeEnv,

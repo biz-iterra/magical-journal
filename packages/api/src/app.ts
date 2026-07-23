@@ -9,6 +9,7 @@ import { getEnv } from "./env.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { errorHandler } from "./middleware/error.js";
 import diagnosis from "./routes/diagnosis.js";
+import line from "./routes/line.js";
 import monthly from "./routes/monthly.js";
 import postal from "./routes/postal.js";
 import profile from "./routes/profile.js";
@@ -58,6 +59,12 @@ app.onError(errorHandler);
 app.get("/api/health", (c) => {
   return c.json({ status: "ok" });
 });
+
+// ── LINE Webhook(認証不要・/api/* の外側) ────────────────────
+// LINE は LIFF トークンではなく X-Line-Signature で認証するため、
+// authMiddleware(/api/*)の配下に入れずにマウントする。署名検証はルート内で行う。
+
+app.route("/line", line);
 
 // ── 認証ミドルウェア ────────────────────────────────────────
 
