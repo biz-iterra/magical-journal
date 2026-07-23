@@ -3,6 +3,7 @@ import type { PotentialTypeId } from "@mj/engine";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
+import { PostalCodeField } from "../components/PostalCodeField";
 import { geocodeAddress } from "../services/geocode";
 import { characterImagePath } from "../utils/character-assets";
 import * as s from "./SettingsPage.css";
@@ -209,6 +210,14 @@ export function SettingsPage() {
       {/* 住所 */}
       <div className={s.section}>
         <div className={s.sectionLabel}>住所</div>
+        <div style={{ marginBottom: "8px" }}>
+          <PostalCodeField
+            onFound={(addr) => {
+              setAddress(addr);
+              setSaved(false);
+            }}
+          />
+        </div>
         <input
           type="text"
           aria-label="住所"
@@ -220,7 +229,9 @@ export function SettingsPage() {
             setSaved(false);
           }}
         />
-        <p className={s.hint}>変更すると方位マップの中心が更新されます。番地までの入力は不要です</p>
+        <p className={s.hint}>
+          郵便番号で検索するか、直接入力できます。変更すると方位マップの中心が更新されます
+        </p>
       </div>
 
       {/* キャラ表示スタイル */}

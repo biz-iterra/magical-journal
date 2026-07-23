@@ -9,6 +9,7 @@ import { getEnv } from "./env.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { errorHandler } from "./middleware/error.js";
 import diagnosis from "./routes/diagnosis.js";
+import postal from "./routes/postal.js";
 import profile from "./routes/profile.js";
 import register from "./routes/register.js";
 import today from "./routes/today.js";
@@ -66,6 +67,7 @@ app.use("/api/*", authMiddleware);
 app.route("/api/register", register);
 app.route("/api/profile", profile);
 app.route("/api/diagnosis", diagnosis);
+app.route("/api/postal", postal);
 app.route("/api/today", today);
 
 export default app;

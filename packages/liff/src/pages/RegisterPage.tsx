@@ -3,6 +3,7 @@ import type { PotentialTypeId } from "@mj/engine";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
+import { PostalCodeField } from "../components/PostalCodeField";
 import { geocodeAddress } from "../services/geocode";
 import { characterImagePath } from "../utils/character-assets";
 import * as s from "./RegisterPage.css";
@@ -438,6 +439,9 @@ function Step2Name({ form, autoRomaji, update }: StepProps & { autoRomaji: strin
           住所
           <span className={s.requiredBadge}>必須</span>
         </div>
+        <div style={{ marginBottom: "8px" }}>
+          <PostalCodeField onFound={(addr) => update("addressText", addr)} />
+        </div>
         <input
           type="text"
           aria-label="住所"
@@ -447,7 +451,7 @@ function Step2Name({ form, autoRomaji, update }: StepProps & { autoRomaji: strin
           onChange={(e) => update("addressText", e.target.value)}
         />
         <p style={{ fontSize: "11px", color: "#999", marginTop: "4px" }}>
-          方位の判定と方位マップの中心表示に使います。番地までの入力は不要です
+          郵便番号で検索するか、直接入力してください。方位の判定と方位マップの中心表示に使います
         </p>
       </div>
     </>
