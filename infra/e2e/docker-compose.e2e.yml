@@ -1,0 +1,42 @@
+# MockLlmProvider による end-to-end 検証用の compose(本番 compose とは分離)。
+#
+# - api と batch を共有ボリューム(同一 SQLite / WAL)に接続
+# - LLM は mock(実 API を叩かない)、Places キー無し(= 方角ベースの一般提案へフォールバック)
+# - api は開発モード(dev:USER_ID トークンで登録・取得できる)
+# - tunnel / LINE / 実キーは不要
+#
+# 使い方: infra/e2e/run-e2e.sh を参照(Git Bash では docker へパスを渡すとき MSYS_NO_PATHCONV=1)。
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/Dockerfile.api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development # dev:USER_ID トークンを許可(検証用)
+      - PORT=3000
+      - DATABASE_PATH=/data/mj.sqlite
+      - ALLOWED_LINE_USER_IDS= # dev では空=全許可
+    volumes:
+      - e2e-data:/data
+    restart: "no"
+
+  # 日次バッチ(3セクション + 性質レポート)を1回実行する検証用ランナー。
+  # command で run-daily / run-personality を上書きして使う。
+  batch:
+    build:
+      context: ../..
+      dockerfile: infra/Dockerfile.batch
+    environment:
+      - NODE_ENV=production
+      - DATABASE_PATH=/data/mj.sqlite
+      - LLM_PROVIDER=mock # 実 LLM を叩かない
+      # GOOGLE_PLACES_API_KEY は未設定 → Places を使わず一般提案へフォールバック
+    volumes:
+      - e2e-data:/data
+    restart: "no"
+
+volumes:
+  e2e-data:

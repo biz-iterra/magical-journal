@@ -52,6 +52,15 @@ export interface DailyFortuneRow {
   readonly date: string;
   readonly directions_json: string | null;
   readonly fortune_text: string | null;
+  /** 3セクション {fortune, schedule, characterNote} の JSON。旧行では null */
+  readonly sections_json: string | null;
+  readonly created_at: string;
+}
+
+export interface PersonalityReportRow {
+  readonly user_id: number;
+  /** 6項目 + 生成根拠(potentialType/zodiac)を含む JSON */
+  readonly report_json: string;
   readonly created_at: string;
 }
 

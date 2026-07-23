@@ -11,6 +11,7 @@ import { errorHandler } from "./middleware/error.js";
 import diagnosis from "./routes/diagnosis.js";
 import line from "./routes/line.js";
 import monthly from "./routes/monthly.js";
+import personality from "./routes/personality.js";
 import postal from "./routes/postal.js";
 import profile from "./routes/profile.js";
 import register from "./routes/register.js";
@@ -78,5 +79,6 @@ app.route("/api/diagnosis", diagnosis);
 app.route("/api/postal", postal);
 app.route("/api/today", today);
 app.route("/api/monthly", monthly);
+app.route("/api/personality", personality);
 
 export default app;

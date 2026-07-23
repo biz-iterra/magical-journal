@@ -19,12 +19,16 @@ import { runDailyBatch } from "./daily/run.js";
 import { closeDb, initConnection } from "./db/connection.js";
 import {
   getActiveUsers,
+  getPersonalityReportJson,
   hasMonthlyFortune,
   saveDailyFortune,
   saveMonthlyFortune,
+  savePersonalityReport,
 } from "./db/queries.js";
 import { createLlmProvider } from "./llm/factory.js";
 import { runMonthlyBatch } from "./monthly/run.js";
+import { runPersonalityBatch } from "./personality/run.js";
+import { createPlacesProvider } from "./places/factory.js";
 
 /** JST の今日を "YYYY-MM-DD" で返す(タイムゾーン事故防止のため Intl 使用) */
 function todayJST(): string {
@@ -58,13 +62,41 @@ async function runDailyOnce(date: string): Promise<number> {
   const config = getConfig();
   initConnection(config.databasePath);
   const provider = createLlmProvider(config);
+  const places = createPlacesProvider(config);
   const calendar = new MasterCalendarProvider();
 
-  const result = await runDailyBatch(date, {
+  const daily = await runDailyBatch(date, {
     provider,
     calendar,
+    places,
+    placesOffsetKm: config.placesOffsetKm,
+    placesRadiusMeters: config.placesRadiusMeters,
     getUsers: getActiveUsers,
     saveFortune: saveDailyFortune,
+  });
+
+  // 性質レポートも相乗り生成(未生成/タイプ変更のユーザーのみ。冪等)
+  const personality = await runPersonalityBatch({
+    provider,
+    getUsers: getActiveUsers,
+    getExistingReport: getPersonalityReportJson,
+    saveReport: savePersonalityReport,
+  });
+
+  return daily.failed.length > 0 || personality.failed.length > 0 ? 1 : 0;
+}
+
+async function runPersonalityOnce(force: boolean): Promise<number> {
+  const config = getConfig();
+  initConnection(config.databasePath);
+  const provider = createLlmProvider(config);
+
+  const result = await runPersonalityBatch({
+    provider,
+    getUsers: getActiveUsers,
+    getExistingReport: getPersonalityReportJson,
+    saveReport: savePersonalityReport,
+    force,
   });
   return result.failed.length > 0 ? 1 : 0;
 }
@@ -96,23 +128,36 @@ function startScheduler(): void {
     `[batch] scheduler 起動: daily="${config.dailyCron}" monthly="${config.monthlyCron}" tz=${config.cronTimezone} provider=${config.llmProvider}`,
   );
 
-  // 日次バッチ
+  // 日次バッチ(3セクション日次運勢 + 性質レポート事前生成)
   cron.schedule(
     config.dailyCron,
     () => {
       const date = todayJST();
       const cfg = getConfig();
       const provider = createLlmProvider(cfg);
+      const places = createPlacesProvider(cfg);
       const calendar = new MasterCalendarProvider();
       runDailyBatch(date, {
         provider,
         calendar,
+        places,
+        placesOffsetKm: cfg.placesOffsetKm,
+        placesRadiusMeters: cfg.placesRadiusMeters,
         getUsers: getActiveUsers,
         saveFortune: saveDailyFortune,
-      }).catch((err: unknown) => {
-        const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
-        console.error(`[batch] 日次バッチで致命的エラー: ${message}`);
-      });
+      })
+        .then(() =>
+          runPersonalityBatch({
+            provider,
+            getUsers: getActiveUsers,
+            getExistingReport: getPersonalityReportJson,
+            saveReport: savePersonalityReport,
+          }),
+        )
+        .catch((err: unknown) => {
+          const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
+          console.error(`[batch] 日次バッチで致命的エラー: ${message}`);
+        });
     },
     { timezone: config.cronTimezone },
   );
@@ -142,6 +187,16 @@ function startScheduler(): void {
 
 async function main(): Promise<void> {
   const [, , command, ...rest] = process.argv;
+
+  if (command === "run-personality") {
+    let code = 0;
+    try {
+      code = await runPersonalityOnce(hasForceFlag(rest));
+    } finally {
+      closeDb();
+    }
+    process.exit(code);
+  }
 
   if (command === "run-daily" || command === "run-monthly") {
     const date = parseDateArg(rest) ?? todayJST();
@@ -180,7 +235,7 @@ async function main(): Promise<void> {
 
   console.error(`[batch] 未知のコマンド: ${command}`);
   console.error(
-    "usage: node dist/index.js [run-daily [--date YYYY-MM-DD] | run-monthly [--date YYYY-MM-DD] [--force]]",
+    "usage: node dist/index.js [run-daily [--date YYYY-MM-DD] | run-monthly [--date YYYY-MM-DD] [--force] | run-personality [--force]]",
   );
   process.exit(2);
 }

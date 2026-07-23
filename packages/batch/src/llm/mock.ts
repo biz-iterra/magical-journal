@@ -17,6 +17,32 @@ export class MockLlmProvider implements LlmProvider {
     const date = matchLine(prompt.user, "日付") ?? "本日";
     const charName = matchLine(prompt.user, "キャラ名") ?? "ナビ";
 
+    // RESPONSE_SCHEMA 行で出力形状を切り替える(実 LLM への JSON 指示に対応する mock 挙動)
+    if (prompt.user.includes("RESPONSE_SCHEMA: daily_sections")) {
+      const places = matchLine(prompt.user, "スケジュール用スポット") ?? "なし";
+      const usesRealPlace = !places.startsWith("なし");
+      const spot = usesRealPlace ? places.split("、")[0] : "近所のカフェ";
+      const sections = {
+        fortune: `【モック運勢】${date}・${typeName}のあなたへ。落ち着いて過ごすと良い一日です。`,
+        schedule: `15時ごろ、${spot ?? "近所のカフェ"}でひと休みして気分を切り替えましょう。`,
+        characterNote: `${charName}より一言: 今日も無理せずいきましょう。応援しています。`,
+      };
+      return Promise.resolve(JSON.stringify(sections));
+    }
+
+    if (prompt.user.includes("RESPONSE_SCHEMA: personality")) {
+      const zodiac = matchLine(prompt.user, "星座") ?? "星座";
+      const items = {
+        basicNature: `【モック】${typeName}(${zodiac})の基本的な性質の説明です。`,
+        workStrength: "【モック】仕事上の強みの説明です。",
+        workWeakness: "【モック】仕事上の弱みの説明です。",
+        socialTendency: "【モック】人付き合いの傾向の説明です。",
+        goodAt: "【モック】得意なことの説明です。",
+        badAt: "【モック】苦手なことの説明です。",
+      };
+      return Promise.resolve(JSON.stringify(items));
+    }
+
     const text = `【モック運勢】${date}・${typeName}のあなたへ。${charName}がお届けする今日のひとこと。構造化データに基づく決定的な方位・運勢はコードで算出済みです。この文章は MockLlmProvider による決定的なプレースホルダです。`;
     return Promise.resolve(text);
   }

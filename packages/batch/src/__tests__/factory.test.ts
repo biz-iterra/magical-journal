@@ -14,6 +14,9 @@ function baseConfig(overrides: Partial<BatchConfig>): BatchConfig {
     dailyCron: "0 3 * * *",
     monthlyCron: "30 3 1 * *",
     cronTimezone: "Asia/Tokyo",
+    googlePlacesApiKey: "",
+    placesOffsetKm: 3,
+    placesRadiusMeters: 1500,
     ...overrides,
   };
 }

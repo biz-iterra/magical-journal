@@ -16,6 +16,17 @@ services:
       - PUBLIC_ASSET_BASE_URL=${PUBLIC_ASSET_BASE_URL:-}
       - ALLOWED_LINE_USER_IDS=${ALLOWED_LINE_USER_IDS}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+      # LLM / Places(リクエストトリガー生成: /api/today 初回アクセス生成・登録時の
+      # 性質レポート生成・手動再生成に使用)。変数名は batch と共通。
+      - LLM_PROVIDER=${LLM_PROVIDER:-claude}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-}
+      - GOOGLE_PLACES_API_KEY=${GOOGLE_PLACES_API_KEY:-}
+      - PLACES_OFFSET_KM=${PLACES_OFFSET_KM:-}
+      - PLACES_RADIUS_METERS=${PLACES_RADIUS_METERS:-}
     volumes:
       - db-data:/data
     restart: unless-stopped
@@ -39,6 +50,11 @@ services:
       - DAILY_CRON=${DAILY_CRON:-}
       - MONTHLY_CRON=${MONTHLY_CRON:-}
       - CRON_TIMEZONE=${CRON_TIMEZONE:-}
+      # Google Places(スケジュールの実在スポット取得。サーバー用キー・リファラー制限なし)。
+      # 未設定なら Places を使わず「方角ベースの一般提案」へフォールバックする。
+      - GOOGLE_PLACES_API_KEY=${GOOGLE_PLACES_API_KEY:-}
+      - PLACES_OFFSET_KM=${PLACES_OFFSET_KM:-}
+      - PLACES_RADIUS_METERS=${PLACES_RADIUS_METERS:-}
       - ALLOWED_LINE_USER_IDS=${ALLOWED_LINE_USER_IDS}
     volumes:
       - db-data:/data

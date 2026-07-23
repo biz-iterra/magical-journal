@@ -18,6 +18,7 @@
 | `USER` / `PROFILE` | ユーザー・プロフィール未登録 | API |
 | `REG` | 新規登録 | API |
 | `PROF` | プロフィール更新 | API |
+| `PERS` | 性質レポート | API |
 | `POST` | 郵便番号検索 | API |
 | `SYS` | サーバー内部 | API |
 | `NET` | クライアント↔サーバー通信 | フロント |
@@ -60,6 +61,12 @@
 |--------|------|-----------|------|--------|
 | `MJ-PROF-001` | 400 | 表示スタイルの指定が不正です | charStyle が male/female 以外 | 入力値を確認 |
 | `MJ-PROF-002` | 400 | 出生時刻の形式が不正です | birthTime が HH:MM でない | 入力値を確認 |
+
+### 性質レポート(PERS)
+
+| コード | HTTP | メッセージ | 意味 | 対処法 |
+|--------|------|-----------|------|--------|
+| `MJ-PERS-429` | 429 | 本日の再生成の上限に達しました | 手動再生成(`POST /api/personality/regenerate`)を当日(JST)6回目以降に試行。1日5回まで | 品質テスト用の制限。翌日(JST 0時)にリセットされる。通常運用では登録時生成・保険バッチで足りる |
 
 ### 郵便番号検索(POST)
 
@@ -127,8 +134,58 @@
 主なエラー: `MJ-REG-001..004`, `MJ-REG-409`
 
 ### GET /api/today
-今日の日盤・方位判定・当日運勢を返す。応答に `homeLatLng`(方位マップ中心)、`dayBan`、`directions.{day,month,year}`、`fortune` を含む。
+今日の日盤・方位判定・当日運勢を返す。応答に `homeLatLng`(方位マップ中心)、`dayBan`、`directions.{day,month,year}`、`fortune` を含む。方位計算(engine)は常に決定的に返す。
+
+`fortune`(3セクション)は**未生成なら初回アクセス時に同期生成してキャッシュ**する(CLAUDE.md ルール6: リクエストトリガー生成 + 保険の夜間バッチ)。バッチが先に生成済みならキャッシュヒットで LLM を呼ばない。生成に失敗しても方位は返し、`fortune: null`(または既存行)で続行する(500 にしない):
+```jsonc
+{
+  "fortune": {                    // バッチ未生成なら null
+    "text": "…運勢セクションの文…",   // 後方互換(= sections.fortune 相当)
+    "sections": {                 // 3セクション。旧行/パース不能なら null
+      "fortune": "今日はどんな日か(星座・気学ベースの中立的な説明)",
+      "schedule": "時間帯 + 具体的な行動提案(実在スポット名を含むことがある。気学用語は使わない)",
+      "characterNote": "{キャラ名}からの一言(キャラのトーン)"
+    },
+    "directionsJson": { "…": "保存済み構造化データ(DailyStructured)" }
+  }
+}
+```
+`sections` は `null` になり得る(生成に失敗した/旧データ)。UI は `sections` があれば3セクション表示、無ければ `text` にフォールバックする。スケジュールの実在スポットは吉方位方向を Google Places で検索した結果で、`GOOGLE_PLACES_API_KEY` 未設定時は実在店名なしの一般提案になる(応答形は不変)。
 主なエラー: `MJ-USER-404`, `MJ-PROFILE-404`
+
+### GET /api/personality
+マイタイプの「AI占い」で表示する性質レポート(タイプ×星座で固定)を返す。レポートは登録時の非同期生成・手動再生成・保険の夜間バッチで生成する(CLAUDE.md ルール6)。この GET 自体は保存済みの `report_json` を返すだけで LLM を呼ばない。
+
+応答:
+```jsonc
+{
+  "report": {                     // 未生成なら null(次回の夜間バッチで生成)
+    "potentialType": "ER+",       // 生成根拠(engine 由来)。UI 表示は typeName/zodiacName を使う
+    "typeName": "情熱的なドリーマー",
+    "zodiac": "taurus",
+    "zodiacName": "牡牛座",
+    "items": {                    // 6項目(すべて LLM 生成の説明文)
+      "basicNature": "基本的な性質",
+      "workStrength": "仕事上の強み",
+      "workWeakness": "仕事上の弱み",
+      "socialTendency": "人付き合いの傾向",
+      "goodAt": "得意なこと",
+      "badAt": "苦手なこと"
+    }
+  }
+}
+```
+`report` は `null` になり得る(登録直後の非同期生成が未完/生成失敗)。UI は `null` のとき「準備中」を表示する。レポートは確定情報(タイプ・星座)由来の性質説明のみで、axes(3軸)・個人情報は含めない。
+主なエラー: `MJ-USER-404`, `MJ-PROFILE-404`
+
+### POST /api/personality/regenerate
+性質レポートを手動で再生成する(品質テスト用)。本人セッション必須。生成した `report` を返す(応答形は GET /api/personality の `report` と同一)。
+
+- **レート制限**: 1ユーザー1日(JST)最大5回。試行時にカウントを消費する(LLM コスト保護のため、生成が失敗してもカウントは戻さない)。当日6回目以降は生成せず `MJ-PERS-429`(429)を返す。カウントは JST 0時にリセット(日付キー)。
+- リクエストボディ不要。
+- 応答: `200 { "report": { … } }`(GET /api/personality の `report` と同形)。
+
+主なエラー: `MJ-USER-404`, `MJ-PROFILE-404`, `MJ-PERS-429`, `MJ-SYS-001`(生成失敗時)
 
 ### GET /api/monthly
 今月(気学月=節入り基準)の月盤・月方位判定・月運を返す。キーは実行日から求めた気学年・気学月。

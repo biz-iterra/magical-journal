@@ -7,6 +7,7 @@ import type {
   DailyFortuneRow,
   DiagResultRow,
   MonthlyFortuneRow,
+  PersonalityReportRow,
   ProfileRow,
   UserRow,
 } from "../types.js";
@@ -176,23 +177,83 @@ export function saveDailyFortune(
   date: string,
   directionsJson: string | null,
   fortuneText: string | null,
+  sectionsJson: string | null = null,
 ): void {
   const db = getDb();
   const stmt = db.prepare(`
-    INSERT INTO daily_fortunes (user_id, date, directions_json, fortune_text)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO daily_fortunes (user_id, date, directions_json, fortune_text, sections_json)
+    VALUES (?, ?, ?, ?, ?)
     ON CONFLICT(user_id, date) DO UPDATE SET
       directions_json = excluded.directions_json,
       fortune_text = excluded.fortune_text,
+      sections_json = excluded.sections_json,
       created_at = datetime('now')
   `);
-  stmt.run(userId, date, directionsJson, fortuneText);
+  stmt.run(userId, date, directionsJson, fortuneText, sectionsJson);
 }
 
 export function getDailyFortune(userId: number, date: string): DailyFortuneRow | undefined {
   const db = getDb();
   const stmt = db.prepare("SELECT * FROM daily_fortunes WHERE user_id = ? AND date = ?");
   return stmt.get(userId, date) as DailyFortuneRow | undefined;
+}
+
+// ── personality_reports ─────────────────────────────────────
+
+/**
+ * 性質レポート(「AI占い」用)を返す。未生成なら undefined。
+ * 生成は登録時の非同期生成・手動再生成・保険の夜間バッチで行う(CLAUDE.md ルール6)。
+ */
+export function getPersonalityReport(userId: number): PersonalityReportRow | undefined {
+  const db = getDb();
+  const stmt = db.prepare("SELECT * FROM personality_reports WHERE user_id = ?");
+  return stmt.get(userId) as PersonalityReportRow | undefined;
+}
+
+/**
+ * 性質レポートを upsert する(UNIQUE(user_id))。
+ * batch/db/queries.ts の savePersonalityReport と同一挙動。
+ */
+export function savePersonalityReport(userId: number, reportJson: string): void {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO personality_reports (user_id, report_json)
+    VALUES (?, ?)
+    ON CONFLICT(user_id) DO UPDATE SET
+      report_json = excluded.report_json,
+      created_at = datetime('now')
+  `);
+  stmt.run(userId, reportJson);
+}
+
+// ── personality_regen_counts(手動再生成のレート制限) ───────────
+
+/**
+ * 当日(JST の "YYYY-MM-DD")の手動再生成カウントを返す。行が無ければ 0。
+ */
+export function getRegenCount(userId: number, date: string): number {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT count FROM personality_regen_counts WHERE user_id = ? AND date = ?")
+    .get(userId, date) as { count: number } | undefined;
+  return row ? row.count : 0;
+}
+
+/**
+ * 当日の手動再生成カウントを 1 増やし、増加後の値を返す(原子的 upsert)。
+ * ★試行時にインクリメントする(LLM コスト保護。生成失敗でもカウントは消費する)。
+ */
+export function incrementRegenCount(userId: number, date: string): number {
+  const db = getDb();
+  const row = db
+    .prepare(`
+      INSERT INTO personality_regen_counts (user_id, date, count)
+      VALUES (?, ?, 1)
+      ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1
+      RETURNING count
+    `)
+    .get(userId, date) as { count: number };
+  return row.count;
 }
 
 // ── monthly_fortunes ────────────────────────────────────────

@@ -9,6 +9,9 @@ FROM base AS build
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json ./
 COPY packages/engine/ packages/engine/
 COPY packages/calendar-data/ packages/calendar-data/
+# api は @mj/batch(リクエストトリガー生成の本体)に依存するため batch も同梱する。
+# batch の依存(@anthropic-ai/sdk / openai)は install --filter @mj/api... で解決される。
+COPY packages/batch/ packages/batch/
 COPY packages/api/ packages/api/
 # better-sqlite3 のビルド許可を Docker 内でのみ有効化する。
 # ホスト(Windows ARM64)ではプリビルドが無くビルド不能なため

@@ -9,7 +9,7 @@ import { getDb } from "./connection.js";
 
 /**
  * アクティブユーザー(許可済み かつ プロフィール登録済み)を返す。
- * 氏名・住所は取得しない。
+ * 氏名・住所は取得しない。lat/lng は Places(スケジュールのスポット取得)に使う。
  */
 export function getActiveUsers(): ActiveUser[] {
   const db = getDb();
@@ -18,7 +18,9 @@ export function getActiveUsers(): ActiveUser[] {
       `SELECT p.user_id     AS userId,
               p.birth_date  AS birthDate,
               p.birth_time  AS birthTime,
-              p.char_style  AS charStyle
+              p.char_style  AS charStyle,
+              p.lat         AS lat,
+              p.lng         AS lng
          FROM profiles p
          JOIN users u ON u.id = p.user_id
         WHERE u.is_allowed = 1
@@ -30,23 +32,50 @@ export function getActiveUsers(): ActiveUser[] {
 
 /**
  * daily_fortunes に upsert する(UNIQUE(user_id, date))。
- * api 側の saveDailyFortune と同一挙動。
+ * api 側の saveDailyFortune と同一挙動。sections_json に3セクションを保存する。
  */
 export function saveDailyFortune(
   userId: number,
   date: string,
   directionsJson: string | null,
   fortuneText: string | null,
+  sectionsJson: string | null = null,
 ): void {
   const db = getDb();
   db.prepare(
-    `INSERT INTO daily_fortunes (user_id, date, directions_json, fortune_text)
-     VALUES (?, ?, ?, ?)
+    `INSERT INTO daily_fortunes (user_id, date, directions_json, fortune_text, sections_json)
+     VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(user_id, date) DO UPDATE SET
        directions_json = excluded.directions_json,
        fortune_text = excluded.fortune_text,
+       sections_json = excluded.sections_json,
        created_at = datetime('now')`,
-  ).run(userId, date, directionsJson, fortuneText);
+  ).run(userId, date, directionsJson, fortuneText, sectionsJson);
+}
+
+/**
+ * personality_reports の report_json を返す(冪等性の署名比較用)。無ければ null。
+ */
+export function getPersonalityReportJson(userId: number): string | null {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT report_json AS reportJson FROM personality_reports WHERE user_id = ?")
+    .get(userId) as { reportJson: string } | undefined;
+  return row ? row.reportJson : null;
+}
+
+/**
+ * personality_reports に upsert する(UNIQUE(user_id))。
+ */
+export function savePersonalityReport(userId: number, reportJson: string): void {
+  const db = getDb();
+  db.prepare(
+    `INSERT INTO personality_reports (user_id, report_json)
+     VALUES (?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       report_json = excluded.report_json,
+       created_at = datetime('now')`,
+  ).run(userId, reportJson);
 }
 
 /**

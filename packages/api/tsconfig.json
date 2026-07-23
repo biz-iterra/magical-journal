@@ -6,5 +6,9 @@
     "lib": ["ES2022"]
   },
   "include": ["src"],
-  "references": [{ "path": "../engine" }, { "path": "../calendar-data" }]
+  "references": [
+    { "path": "../engine" },
+    { "path": "../calendar-data" },
+    { "path": "../batch" }
+  ]
 }

@@ -7,12 +7,19 @@
  * 3. 201 を返す
  */
 
+import { generatePersonalityForUser } from "@mj/batch";
 import type { ProfileInputs } from "@mj/engine";
 import { Hono } from "hono";
 import { getDb } from "../db/connection.js";
-import { createProfile, createUser, getUserByLineId } from "../db/queries.js";
+import {
+  createProfile,
+  createUser,
+  getUserByLineId,
+  savePersonalityReport,
+} from "../db/queries.js";
 import { fail } from "../errors.js";
 import { runAndSaveDiagnosis } from "../services/diagnosis.js";
+import { buildGenerationProviders } from "../services/generation.js";
 import type { AppEnv, RegisterBody } from "../types.js";
 
 const register = new Hono<AppEnv>();
@@ -81,6 +88,29 @@ register.post("/", async (c) => {
   });
 
   const user = transaction();
+
+  // 性質レポートを非同期(fire-and-forget)で先行生成する。
+  // 201 はブロックしない。生成失敗しても登録は失敗させない(CLAUDE.md ルール6: グレースフル)。
+  // 未生成のまま /api/personality を叩いても「準備中」を返せる(保険の夜間バッチでも生成される)。
+  void (async () => {
+    try {
+      const { provider } = buildGenerationProviders();
+      const activeUser = {
+        userId: user.id,
+        birthDate: body.birthDate,
+        birthTime: body.birthTime ?? null,
+        charStyle: body.charStyle,
+        lat: body.lat ?? null,
+        lng: body.lng ?? null,
+      };
+      const report = await generatePersonalityForUser(activeUser, { provider });
+      savePersonalityReport(user.id, JSON.stringify(report));
+    } catch (err) {
+      // 握りつぶさずログのみ(個人情報は出さない。user_id のみ)。登録結果には影響させない。
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[register] user_id=${String(user.id)} 性質レポート生成に失敗: ${message}`);
+    }
+  })();
 
   return c.json({ message: "Registration successful", userId: user.id }, 201);
 });

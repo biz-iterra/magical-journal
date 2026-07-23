@@ -27,6 +27,15 @@ export interface BatchConfig {
   readonly monthlyCron: string;
   /** cron のタイムゾーン(暦は JST 前提) */
   readonly cronTimezone: string;
+  /**
+   * Google Places API キー(サーバー用・リファラー制限なし)。
+   * 未設定なら Places を使わず「方角ベースの一般提案(実在店名なし)」にフォールバックする。
+   */
+  readonly googlePlacesApiKey: string;
+  /** 自宅から吉方位方向へオフセットする距離(km)。検索点の基準 */
+  readonly placesOffsetKm: number;
+  /** オフセット点周辺の Nearby Search 半径(m) */
+  readonly placesRadiusMeters: number;
 }
 
 /** 既定モデル(最新モデル。環境変数で差し替え可能) */
@@ -38,6 +47,9 @@ const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_DAILY_CRON = "0 3 * * *";
 const DEFAULT_MONTHLY_CRON = "30 3 1 * *";
 const DEFAULT_TIMEZONE = "Asia/Tokyo";
+// 吉方位方向に数km オフセットした点の周辺を探す(方位の「向き」を活かしつつ生活圏内)。
+const DEFAULT_PLACES_OFFSET_KM = 3;
+const DEFAULT_PLACES_RADIUS_METERS = 1500;
 
 let cached: BatchConfig | undefined;
 
@@ -67,6 +79,18 @@ export function getConfig(): BatchConfig {
     throw new Error("LLM_MAX_TOKENS must be a positive integer");
   }
 
+  const offsetRaw = process.env.PLACES_OFFSET_KM;
+  const placesOffsetKm = offsetRaw ? Number(offsetRaw) : DEFAULT_PLACES_OFFSET_KM;
+  if (!Number.isFinite(placesOffsetKm) || placesOffsetKm <= 0) {
+    throw new Error("PLACES_OFFSET_KM must be a positive number");
+  }
+
+  const radiusRaw = process.env.PLACES_RADIUS_METERS;
+  const placesRadiusMeters = radiusRaw ? Number(radiusRaw) : DEFAULT_PLACES_RADIUS_METERS;
+  if (!Number.isInteger(placesRadiusMeters) || placesRadiusMeters < 1) {
+    throw new Error("PLACES_RADIUS_METERS must be a positive integer");
+  }
+
   cached = {
     databasePath,
     llmProvider: parseProvider(process.env.LLM_PROVIDER),
@@ -78,6 +102,9 @@ export function getConfig(): BatchConfig {
     dailyCron: process.env.DAILY_CRON?.trim() || DEFAULT_DAILY_CRON,
     monthlyCron: process.env.MONTHLY_CRON?.trim() || DEFAULT_MONTHLY_CRON,
     cronTimezone: process.env.CRON_TIMEZONE?.trim() || DEFAULT_TIMEZONE,
+    googlePlacesApiKey: process.env.GOOGLE_PLACES_API_KEY ?? "",
+    placesOffsetKm,
+    placesRadiusMeters,
   };
 
   return cached;
