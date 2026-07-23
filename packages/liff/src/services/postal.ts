@@ -1,6 +1,7 @@
 /**
  * 郵便番号 → 住所検索。
- * API サーバー(/api/postal)経由で zipcloud を呼ぶ(CORS 回避)。
+ * API サーバー(/api/postal)経由で郵便番号検索 API(jp-postal-code-api)を
+ * 呼ぶ(ブラウザからの直接呼び出しは CORS で失敗するため)。
  */
 
 import { apiClient } from "../api/client";

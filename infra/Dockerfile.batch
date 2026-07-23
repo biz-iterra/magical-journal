@@ -15,8 +15,7 @@ COPY packages/batch/ packages/batch/
 # pnpm-workspace.yaml では false にしてある。Linux ではプリビルド取得可。
 RUN sed -i 's/^  better-sqlite3: false$/  better-sqlite3: true/' pnpm-workspace.yaml \
  && pnpm install --frozen-lockfile --filter @mj/batch...
-# batch と、その workspace 依存のみを依存順にビルドする。
-# (現状 batch は依存ゼロのスタブ。Phase 2 で engine 等を追加すれば自動で対象に入る)
+# batch と、その workspace 依存(engine・calendar-data)を依存順にビルドする。
 RUN pnpm --filter "@mj/batch..." build
 
 # ── ランタイム ──────────────────────────────────────────────

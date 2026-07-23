@@ -52,10 +52,10 @@ export async function geocodeAddress(address: string): Promise<LatLng | null> {
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("GEOCODE_TIMEOUT")), ms);
-    }),
-  ]);
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("GEOCODE_TIMEOUT")), ms);
+  });
+  // 先に解決した方を返しつつ、残ったタイマーを必ず解除する
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }

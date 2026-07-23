@@ -69,8 +69,15 @@ export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
     lineUserId = result.sub;
   }
 
-  // 許可リストチェック(空リストの場合は全員許可)
-  if (env.allowedLineUserIds.length > 0 && !env.allowedLineUserIds.includes(lineUserId)) {
+  // 許可リストチェック(クローズド運用)。
+  // 本番で許可リストが空なら構成ミスとみなしフェイルクローズ(全拒否)する。
+  // 開発モードのみ空リスト=全員許可を許容する(ローカル検証のため)。
+  const isDev = env.nodeEnv === "development";
+  if (env.allowedLineUserIds.length === 0) {
+    if (!isDev) {
+      return fail(c, "MJ-AUTH-004");
+    }
+  } else if (!env.allowedLineUserIds.includes(lineUserId)) {
     return fail(c, "MJ-AUTH-004");
   }
 

@@ -35,7 +35,10 @@ postal.get("/", async (c) => {
 
   let data: PostalApiResponse;
   try {
-    const res = await fetch(`https://jp-postal-code-api.ttskch.com/api/v1/${zipcode}.json`);
+    // 上流が無応答でもリクエストがハングしないようタイムアウトを設ける
+    const res = await fetch(`https://jp-postal-code-api.ttskch.com/api/v1/${zipcode}.json`, {
+      signal: AbortSignal.timeout(5000),
+    });
     if (res.status === 404) {
       return fail(c, "MJ-POST-002");
     }
