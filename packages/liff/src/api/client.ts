@@ -1,13 +1,17 @@
+import { clientError, formatError } from "../errors";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 /**
- * HTTP ステータスコードを含む API エラー。
- * catch 側で status を参照して 409 / 404 等を分岐できる。
+ * HTTP ステータスコードとエラーコードを含む API エラー。
+ * catch 側で status / code を参照して分岐できる。
+ * message は「メッセージ(コード)」形式に整形済み。
  */
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly code: string | null = null,
   ) {
     super(message);
     this.name = "ApiError";
@@ -52,8 +56,20 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new ApiError(response.status, `API error ${response.status}: ${text}`);
+    // API のエラー応答 { error, code } を読み取り「メッセージ(コード)」に整形する。
+    const body = (await response.json().catch(() => null)) as {
+      error?: string;
+      code?: string;
+    } | null;
+
+    if (body?.error && body.code) {
+      throw new ApiError(response.status, formatError(body.error, body.code), body.code);
+    }
+    if (body?.error) {
+      throw new ApiError(response.status, body.error, null);
+    }
+    // 構造化されていない応答(ネットワーク層のエラー等)
+    throw new ApiError(response.status, clientError("MJ-NET-001"), "MJ-NET-001");
   }
 
   return response.json() as Promise<T>;

@@ -11,6 +11,7 @@ import type { ProfileInputs } from "@mj/engine";
 import { Hono } from "hono";
 import { getDb } from "../db/connection.js";
 import { createProfile, createUser, getUserByLineId } from "../db/queries.js";
+import { fail } from "../errors.js";
 import { runAndSaveDiagnosis } from "../services/diagnosis.js";
 import type { AppEnv, RegisterBody } from "../types.js";
 
@@ -22,28 +23,28 @@ register.post("/", async (c) => {
   // 既存ユーザーチェック
   const existing = getUserByLineId(lineUserId);
   if (existing) {
-    return c.json({ error: "User already registered" }, 409);
+    return fail(c, "MJ-REG-409");
   }
 
   // リクエストボディの検証
   const body = await c.req.json<RegisterBody>();
 
   if (!body.birthDate || !body.nameKana || !body.nameRomaji || !body.charStyle) {
-    return c.json({ error: "birthDate, nameKana, nameRomaji, charStyle are required" }, 400);
+    return fail(c, "MJ-REG-001");
   }
 
   if (body.charStyle !== "male" && body.charStyle !== "female") {
-    return c.json({ error: "charStyle must be 'male' or 'female'" }, 400);
+    return fail(c, "MJ-REG-002");
   }
 
   // 日付形式の簡易チェック
   if (!/^\d{4}-\d{2}-\d{2}$/.test(body.birthDate)) {
-    return c.json({ error: "birthDate must be YYYY-MM-DD format" }, 400);
+    return fail(c, "MJ-REG-003");
   }
 
   // 出生時刻の簡易チェック
   if (body.birthTime !== undefined && !/^\d{2}:\d{2}$/.test(body.birthTime)) {
-    return c.json({ error: "birthTime must be HH:MM format" }, 400);
+    return fail(c, "MJ-REG-004");
   }
 
   // トランザクションで一括処理

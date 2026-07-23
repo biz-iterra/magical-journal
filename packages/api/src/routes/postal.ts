@@ -8,6 +8,7 @@
  */
 
 import { Hono } from "hono";
+import { fail } from "../errors.js";
 import type { AppEnv } from "../types.js";
 
 const postal = new Hono<AppEnv>();
@@ -29,26 +30,26 @@ postal.get("/", async (c) => {
   const zipcode = raw.replace(/[^0-9]/g, "");
 
   if (zipcode.length !== 7) {
-    return c.json({ error: "郵便番号は7桁で指定してください" }, 400);
+    return fail(c, "MJ-POST-001");
   }
 
   let data: PostalApiResponse;
   try {
     const res = await fetch(`https://jp-postal-code-api.ttskch.com/api/v1/${zipcode}.json`);
     if (res.status === 404) {
-      return c.json({ error: "該当する住所が見つかりませんでした" }, 404);
+      return fail(c, "MJ-POST-002");
     }
     if (!res.ok) {
-      return c.json({ error: "郵便番号検索サービスでエラーが発生しました" }, 502);
+      return fail(c, "MJ-POST-003");
     }
     data = (await res.json()) as PostalApiResponse;
   } catch {
-    return c.json({ error: "郵便番号検索サービスに接続できませんでした" }, 502);
+    return fail(c, "MJ-POST-004");
   }
 
   const first = data.addresses?.[0]?.ja;
   if (!first) {
-    return c.json({ error: "該当する住所が見つかりませんでした" }, 404);
+    return fail(c, "MJ-POST-002");
   }
 
   return c.json({

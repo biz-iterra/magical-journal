@@ -1,3 +1,4 @@
+import { formatError } from "../errors";
 /**
  * LIFF SDK 型定義
  */
@@ -56,11 +57,11 @@ export async function initLiff(): Promise<LiffInitResult> {
   }
 
   if (!window.liff) {
-    throw new Error("LIFF SDK が読み込まれていません");
+    throw new Error(formatError("LIFF SDK が読み込まれていません", "MJ-LIFF-001"));
   }
 
   if (!liffId) {
-    throw new Error("VITE_LIFF_ID が設定されていません");
+    throw new Error(formatError("VITE_LIFF_ID が設定されていません", "MJ-LIFF-001"));
   }
 
   await window.liff.init({ liffId });

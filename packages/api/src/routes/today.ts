@@ -9,6 +9,7 @@ import { MasterCalendarProvider } from "@mj/calendar-data";
 import { computeGetsumeiStar, computeHonmeiStar, judgeDirections } from "@mj/engine";
 import { Hono } from "hono";
 import { getDailyFortune, getProfile, getUserByLineId } from "../db/queries.js";
+import { fail } from "../errors.js";
 import type { AppEnv } from "../types.js";
 
 const today = new Hono<AppEnv>();
@@ -26,12 +27,12 @@ today.get("/", (c) => {
 
   const user = getUserByLineId(lineUserId);
   if (!user) {
-    return c.json({ error: "User not found" }, 404);
+    return fail(c, "MJ-USER-404");
   }
 
   const prof = getProfile(user.id);
   if (!prof) {
-    return c.json({ error: "Profile not found" }, 404);
+    return fail(c, "MJ-PROFILE-404");
   }
 
   const dateStr = todayJST();
@@ -64,7 +65,9 @@ today.get("/", (c) => {
     honmeiStar,
     getsumeiStar,
     homeLatLng:
-      prof.lat != null && prof.lng != null ? { lat: prof.lat as number, lng: prof.lng as number } : null,
+      prof.lat != null && prof.lng != null
+        ? { lat: prof.lat as number, lng: prof.lng as number }
+        : null,
     dayBan: {
       center: dayBan.center,
       positions: dayBan.positions,

@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from "../api/client";
+import { formatError } from "../errors";
 
 export interface PostalResult {
   readonly zipcode: string;
@@ -20,7 +21,8 @@ export interface PostalResult {
 export async function lookupPostalCode(zipcode: string): Promise<PostalResult> {
   const digits = zipcode.replace(/[^0-9]/g, "");
   if (digits.length !== 7) {
-    throw new Error("郵便番号は7桁で入力してください");
+    // 同条件のサーバー側検証(MJ-POST-001)とコードを揃える
+    throw new Error(formatError("郵便番号は7桁で入力してください", "MJ-POST-001"));
   }
   return apiClient.get<PostalResult>(`/api/postal?zipcode=${digits}`);
 }

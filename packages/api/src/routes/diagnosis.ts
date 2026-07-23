@@ -7,6 +7,7 @@
 
 import { Hono } from "hono";
 import { getDiagResults, getUserByLineId } from "../db/queries.js";
+import { fail } from "../errors.js";
 import type { AppEnv } from "../types.js";
 
 const diagnosis = new Hono<AppEnv>();
@@ -16,7 +17,7 @@ diagnosis.get("/", (c) => {
 
   const user = getUserByLineId(lineUserId);
   if (!user) {
-    return c.json({ error: "User not found" }, 404);
+    return fail(c, "MJ-USER-404");
   }
 
   const results = getDiagResults(user.id);

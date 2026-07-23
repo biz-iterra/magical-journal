@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { clientError } from "../errors";
 import { lookupPostalCode } from "../services/postal";
 
 interface Props {
@@ -23,7 +24,7 @@ export function PostalCodeField({ onFound }: Props) {
       const result = await lookupPostalCode(value);
       onFound(result.address);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "住所を取得できませんでした");
+      setError(err instanceof Error ? err.message : clientError("MJ-NET-001"));
     } finally {
       setLoading(false);
     }

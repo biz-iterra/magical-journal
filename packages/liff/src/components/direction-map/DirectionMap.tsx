@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { clientError } from "../../errors";
 import { DISTANCE_RINGS_KM, getFortuneColor, getSectorAngle } from "./geometry";
 import { GoogleMapsProvider } from "./google-maps-provider";
 import type { DirectionMapProps } from "./types";
@@ -36,8 +37,8 @@ export function DirectionMap({ center, directions, height = "300px" }: Direction
 
         setLoading(false);
       })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "地図の読み込みに失敗しました");
+      .catch(() => {
+        setError(clientError("MJ-MAP-003"));
         setLoading(false);
       });
 

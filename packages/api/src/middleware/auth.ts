@@ -9,6 +9,7 @@
 
 import { createMiddleware } from "hono/factory";
 import { getEnv } from "../env.js";
+import { fail } from "../errors.js";
 import type { AppEnv } from "../types.js";
 
 /** LINE ID トークン検証 API のレスポンス型(必要最小限) */
@@ -44,7 +45,7 @@ export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
   const authHeader = c.req.header("Authorization");
 
   if (!authHeader?.startsWith("Bearer ")) {
-    return c.json({ error: "Authorization header required" }, 401);
+    return fail(c, "MJ-AUTH-001");
   }
 
   const token = authHeader.slice(7);
@@ -55,14 +56,14 @@ export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
   if (env.nodeEnv === "development" && token.startsWith("dev:")) {
     lineUserId = token.slice(4);
     if (!lineUserId) {
-      return c.json({ error: "Invalid dev token format" }, 401);
+      return fail(c, "MJ-AUTH-002");
     }
   } else {
     // 本番: LINE IDトークン検証
     const result = await verifyLineIdToken(token, env.lineLoginChannelId);
 
     if (result.error || !result.sub) {
-      return c.json({ error: "Invalid ID token", detail: result.error_description }, 401);
+      return fail(c, "MJ-AUTH-003");
     }
 
     lineUserId = result.sub;
@@ -70,7 +71,7 @@ export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
 
   // 許可リストチェック(空リストの場合は全員許可)
   if (env.allowedLineUserIds.length > 0 && !env.allowedLineUserIds.includes(lineUserId)) {
-    return c.json({ error: "User not allowed" }, 403);
+    return fail(c, "MJ-AUTH-004");
   }
 
   c.set("lineUserId", lineUserId);

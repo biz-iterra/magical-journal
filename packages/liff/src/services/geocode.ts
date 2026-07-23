@@ -7,6 +7,7 @@
  */
 
 import { loadGoogleMaps } from "../components/direction-map/google-maps-provider";
+import { clientError } from "../errors";
 
 export interface LatLng {
   readonly lat: number;
@@ -29,7 +30,7 @@ export async function geocodeAddress(address: string): Promise<LatLng | null> {
       console.warn("[geocode] VITE_GOOGLE_MAPS_API_KEY 未設定のため座標なしで続行します");
       return null;
     }
-    throw new Error("地図サービスの設定に問題があります。管理者にお問い合わせください");
+    throw new Error(clientError("MJ-MAP-001"));
   }
 
   await loadGoogleMaps(apiKey);
@@ -46,9 +47,7 @@ export async function geocodeAddress(address: string): Promise<LatLng | null> {
     }
     return { lat: location.lat(), lng: location.lng() };
   } catch {
-    throw new Error(
-      "住所から位置を特定できませんでした。市区町村からの住所を確認して入力してください",
-    );
+    throw new Error(clientError("MJ-MAP-002"));
   }
 }
 

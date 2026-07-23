@@ -21,9 +21,11 @@ export const errorHandler: ErrorHandler = (err, c) => {
 
   const status = "status" in err && typeof err.status === "number" ? err.status : 500;
 
+  // 500 系は内部詳細を露出しない。共通コード MJ-SYS-001 を付与する。
   return c.json(
     {
-      error: status >= 500 ? "Internal server error" : err.message,
+      error: status >= 500 ? "サーバー内部エラーが発生しました" : err.message,
+      code: status >= 500 ? "MJ-SYS-001" : undefined,
       ...(isDev ? { stack: err.stack } : {}),
     },
     status as 500,

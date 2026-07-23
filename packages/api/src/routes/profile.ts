@@ -9,6 +9,7 @@ import type { ProfileInputs } from "@mj/engine";
 import { Hono } from "hono";
 import { getDb } from "../db/connection.js";
 import { getDiagResults, getProfile, getUserByLineId, updateProfile } from "../db/queries.js";
+import { fail } from "../errors.js";
 import { runAndSaveDiagnosis } from "../services/diagnosis.js";
 import type { AppEnv, ProfileUpdateBody } from "../types.js";
 
@@ -19,12 +20,12 @@ profile.get("/", (c) => {
 
   const user = getUserByLineId(lineUserId);
   if (!user) {
-    return c.json({ error: "User not found" }, 404);
+    return fail(c, "MJ-USER-404");
   }
 
   const prof = getProfile(user.id);
   if (!prof) {
-    return c.json({ error: "Profile not found" }, 404);
+    return fail(c, "MJ-PROFILE-404");
   }
 
   const diagResults = getDiagResults(user.id);
@@ -57,17 +58,17 @@ profile.patch("/", async (c) => {
 
   const user = getUserByLineId(lineUserId);
   if (!user) {
-    return c.json({ error: "User not found" }, 404);
+    return fail(c, "MJ-USER-404");
   }
 
   const body = await c.req.json<ProfileUpdateBody>();
 
   if (body.charStyle !== undefined && body.charStyle !== "male" && body.charStyle !== "female") {
-    return c.json({ error: "charStyle must be 'male' or 'female'" }, 400);
+    return fail(c, "MJ-PROF-001");
   }
 
   if (body.birthTime !== undefined && !/^\d{2}:\d{2}$/.test(body.birthTime)) {
-    return c.json({ error: "birthTime must be HH:MM format" }, 400);
+    return fail(c, "MJ-PROF-002");
   }
 
   // 出生時刻はポテンシャルタイプ(ハイブリッド判定)に影響するため、
@@ -99,7 +100,7 @@ profile.patch("/", async (c) => {
   })();
 
   if (!updated) {
-    return c.json({ error: "Profile not found" }, 404);
+    return fail(c, "MJ-PROFILE-404");
   }
 
   return c.json({

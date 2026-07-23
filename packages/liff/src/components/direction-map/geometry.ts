@@ -68,7 +68,7 @@ export function generateArcPoints(
   startDeg: number,
   endDeg: number,
   radiusKm: number,
-  steps: number = 24,
+  steps = 24,
 ): Array<{ lat: number; lng: number }> {
   const points: Array<{ lat: number; lng: number }> = [];
 
