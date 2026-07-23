@@ -252,10 +252,11 @@ function HybridDisplay({
   const secondaryCharName = secondaryInfo ? getCharacterName(secondary, charStyle) : null;
 
   return (
-    <div className={s.hybridRow}>
-      {/* 主タイプ(大) */}
+    <div className={s.mainCard}>
+      <div className={s.mainCardLabel}>Potential Type</div>
+
+      {/* 主タイプ(大) — 主役。単一表示と同じヒーロー体裁 */}
       <div className={s.hybridPrimary}>
-        <div className={s.hybridLabel}>Primary</div>
         <img
           className={s.charImage}
           src={characterImagePath(primary, charStyle)}
@@ -265,18 +266,28 @@ function HybridDisplay({
         <div className={s.typeNameLarge}>{primaryInfo?.typeName ?? primary}</div>
         {primaryCharName && <div className={s.characterName}>{primaryCharName}</div>}
       </div>
-      {/* 副タイプ(小) */}
+
+      {/* 副タイプ(小) — 従属。沈めたインセット面 */}
       <div className={s.hybridSecondary}>
-        <div className={s.hybridLabel}>Secondary</div>
-        <img
-          className={s.charImageSmall}
-          src={characterImagePath(secondary, charStyle)}
-          alt={secondaryCharName ?? secondary}
-        />
-        <div className={s.hybridCodeSmall}>{secondary}</div>
-        <div className={s.hybridNameSmall}>{secondaryInfo?.typeName ?? secondary}</div>
-        {secondaryCharName && <div className={s.hybridCharName}>{secondaryCharName}</div>}
+        <div className={s.hybridSecondaryLabel}>併せ持つタイプ</div>
+        <div className={s.hybridSecondaryRow}>
+          <img
+            className={s.charImageSmall}
+            src={characterImagePath(secondary, charStyle)}
+            alt={secondaryCharName ?? secondary}
+          />
+          <div className={s.hybridSecondaryText}>
+            <div className={s.hybridCodeSmall}>{secondary}</div>
+            <div className={s.hybridNameSmall}>{secondaryInfo?.typeName ?? secondary}</div>
+            {secondaryCharName && <div className={s.hybridCharName}>{secondaryCharName}</div>}
+          </div>
+        </div>
       </div>
+
+      {/* ハイブリッドの意味付け(固定コピー・LLM 不使用) */}
+      <p className={s.hybridNote}>
+        生まれた時刻が日の変わり目に近いため、2つのタイプの性質を併せ持ちます。
+      </p>
     </div>
   );
 }

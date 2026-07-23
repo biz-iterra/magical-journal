@@ -96,59 +96,69 @@ export const characterName = style({
 });
 
 // ── ハイブリッド表示 ──────────────────────────────────────
+// 主タイプを主役(大・上・単一表示と同体裁)に、副タイプを従属
+// (小・下・沈めたインセット面)として 1 枚のカード内に階層化する。
+// 横並びにせず縦積みにすることで、狭幅の LIFF WebView(375px 以下)でも
+// 主大画像・副パネルのどちらも縮んで破綻しない。
 
-export const hybridRow = style({
-  display: "flex",
-  gap: "12px",
-  marginBottom: "12px",
-});
+// 主タイプのヒーロー領域。子要素(charImage 等)は単一表示と共有し一貫性を保つ。
+export const hybridPrimary = style({});
 
-export const hybridPrimary = style({
-  flex: 2,
-  backgroundColor: vars.color.surface,
-  borderRadius: "16px",
-  padding: "20px 16px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
-});
-
+// 副タイプ = 一段沈めたインセット面。主役より小さく・地味にして従属を明示する。
 export const hybridSecondary = style({
-  flex: 1,
-  backgroundColor: vars.color.surface,
-  borderRadius: "16px",
-  padding: "16px 12px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+  marginTop: "20px",
+  padding: "12px 14px",
+  backgroundColor: vars.color.surfaceSubtle,
+  borderRadius: "12px",
+});
+
+export const hybridSecondaryLabel = style({
+  fontSize: "11px",
+  fontWeight: 600,
+  color: vars.color.textFaint,
+  letterSpacing: "0.04em",
+  marginBottom: "10px",
+});
+
+// 副タイプ内: 小画像 + テキスト列の横並び
+export const hybridSecondaryRow = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+});
+
+export const hybridSecondaryText = style({
   display: "flex",
   flexDirection: "column",
-  justifyContent: "center",
-});
-
-export const hybridLabel = style({
-  fontSize: "10px",
-  fontWeight: 600,
-  color: vars.color.accent,
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.08em",
-  marginBottom: "6px",
+  gap: "2px",
+  minWidth: 0,
 });
 
 export const hybridCodeSmall = style({
-  fontSize: "20px",
+  fontSize: "18px",
   fontWeight: 700,
   color: vars.color.text,
   lineHeight: 1.2,
-  marginBottom: "2px",
 });
 
 export const hybridNameSmall = style({
-  fontSize: "12px",
-  color: vars.color.textMuted,
+  fontSize: "13px",
+  color: vars.color.textSecondary,
 });
 
-// 副キャラ名(ハイブリッドの小カード)
+// 副キャラ名(ハイブリッドの副パネル)
 export const hybridCharName = style({
-  fontSize: "11px",
+  fontSize: "12px",
+  fontWeight: 500,
   color: vars.color.accent,
-  marginTop: "4px",
+});
+
+// ハイブリッドの意味付け(なぜ 2 キャラ出るか)の固定コピー
+export const hybridNote = style({
+  marginTop: "16px",
+  fontSize: "12px",
+  lineHeight: 1.6,
+  color: vars.color.textMuted,
 });
 
 // ── キャラ画像プレースホルダ ──────────────────────────────
@@ -164,13 +174,13 @@ export const charImage = style({
 });
 
 export const charImageSmall = style({
-  width: "64px",
-  height: "64px",
+  width: "56px",
+  height: "56px",
+  flexShrink: 0,
   borderRadius: "50%",
   objectFit: "cover",
   objectPosition: "top",
   backgroundColor: vars.color.accentSubtle,
-  marginBottom: "8px",
 });
 
 export const charPlaceholder = style({
