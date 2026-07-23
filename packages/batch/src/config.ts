@@ -32,7 +32,9 @@ export interface BatchConfig {
 /** 既定モデル(最新モデル。環境変数で差し替え可能) */
 const DEFAULT_CLAUDE_MODEL = "claude-sonnet-5";
 const DEFAULT_OPENAI_MODEL = "gpt-5";
-const DEFAULT_MAX_TOKENS = 1024;
+// 推論モデル(gpt-5 等)は推論トークンもこの枠を消費するため、
+// 本文が出力できるよう余裕を持たせる(reasoning_effort=minimal と併用)。
+const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_DAILY_CRON = "0 3 * * *";
 const DEFAULT_MONTHLY_CRON = "30 3 1 * *";
 const DEFAULT_TIMEZONE = "Asia/Tokyo";

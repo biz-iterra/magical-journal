@@ -31,9 +31,16 @@ export class OpenAiProvider implements LlmProvider {
   }
 
   async generate(prompt: LlmPrompt): Promise<string> {
+    // GPT-5 / o 系は推論モデル。推論トークンが max_completion_tokens を
+    // 消費し、既定(medium)だと本文出力前に上限へ達して空応答になりうる。
+    // 運勢文生成は深い推論を要しないため reasoning_effort=minimal で
+    // 推論を最小化し、出力にトークン枠を回す(コスト・遅延も低減)。
+    const isReasoningModel = /^(gpt-5|o\d)/.test(this.model);
+
     const response = await this.client.chat.completions.create({
       model: this.model,
       max_completion_tokens: this.maxTokens,
+      ...(isReasoningModel ? { reasoning_effort: "minimal" as const } : {}),
       messages: [
         { role: "system", content: prompt.system },
         { role: "user", content: prompt.user },
