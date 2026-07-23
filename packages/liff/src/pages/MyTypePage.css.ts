@@ -145,6 +145,26 @@ export const hybridNameSmall = style({
 
 // ── キャラ画像プレースホルダ ──────────────────────────────
 
+export const charImage = style({
+  width: "120px",
+  height: "120px",
+  borderRadius: "50%",
+  objectFit: "cover",
+  objectPosition: "top",
+  backgroundColor: "#eef2ff",
+  marginBottom: "12px",
+});
+
+export const charImageSmall = style({
+  width: "64px",
+  height: "64px",
+  borderRadius: "50%",
+  objectFit: "cover",
+  objectPosition: "top",
+  backgroundColor: "#eef2ff",
+  marginBottom: "8px",
+});
+
 export const charPlaceholder = style({
   width: "80px",
   height: "80px",

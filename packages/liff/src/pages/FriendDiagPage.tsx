@@ -13,6 +13,7 @@ import {
 } from "@mj/engine";
 import type { NumerologyNumber, StarNumber, ZodiacSign } from "@mj/engine";
 import { type FormEvent, useCallback, useMemo, useState } from "react";
+import { characterImagePath } from "../utils/character-assets";
 import * as s from "./FriendDiagPage.css";
 
 // ── 定数 ─────────────────────────────────────────────────
@@ -330,6 +331,18 @@ function PotentialCard({
   return (
     <div className={s.mainCard}>
       <div className={s.mainCardLabel}>Potential Type</div>
+      <img
+        src={characterImagePath(potential.primaryType, "male")}
+        alt={charName ?? potential.primaryType}
+        style={{
+          width: "100px",
+          height: "100px",
+          borderRadius: "50%",
+          objectFit: "cover",
+          objectPosition: "top",
+          marginBottom: "10px",
+        }}
+      />
       <div className={s.typeCodeLarge}>{potential.primaryType}</div>
       <div className={s.typeNameLarge}>{info?.typeName ?? potential.primaryType}</div>
       {charName && (

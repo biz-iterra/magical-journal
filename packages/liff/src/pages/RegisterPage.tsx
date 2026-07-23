@@ -1,8 +1,10 @@
-import { kanaToHepburn } from "@mj/engine";
+import { computePotential, getCharacterName, kanaToHepburn } from "@mj/engine";
+import type { PotentialTypeId } from "@mj/engine";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
 import { geocodeAddress } from "../services/geocode";
+import { characterImagePath } from "../utils/character-assets";
 import * as s from "./RegisterPage.css";
 
 // ── 定数 ──────────────────────────────────────────────────
@@ -455,6 +457,23 @@ function Step2Name({ form, autoRomaji, update }: StepProps & { autoRomaji: strin
 // ── ステップ3: キャラ表示スタイル ─────────────────────────
 
 function Step3CharStyle({ form, update }: StepProps) {
+  // 生年月日から自分のタイプを端末内で算出し、そのタイプの男女キャラを提示する
+  // (docs/01 §キャラ表示スタイル。potential は clientSafe モジュール)
+  const typeId: PotentialTypeId | null = useMemo(() => {
+    if (!form.year || !form.month || !form.day) return null;
+    const pad2 = (n: number) => String(n).padStart(2, "0");
+    const birthDate = `${form.year}-${pad2(Number(form.month))}-${pad2(Number(form.day))}`;
+    const birthTime =
+      form.birthTimeH !== "" && form.birthTimeM !== ""
+        ? `${pad2(Number(form.birthTimeH))}:${pad2(Number(form.birthTimeM))}`
+        : undefined;
+    try {
+      return computePotential(birthDate, birthTime).primaryType;
+    } catch {
+      return null;
+    }
+  }, [form.year, form.month, form.day, form.birthTimeH, form.birthTimeM]);
+
   return (
     <div className={s.fieldGroup}>
       <div className={s.label}>
@@ -462,7 +481,7 @@ function Step3CharStyle({ form, update }: StepProps) {
         <span className={s.requiredBadge}>必須</span>
       </div>
       <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
-        診断結果に表示されるキャラクターの見た目を選んでください。あとから設定で変更できます。
+        あなたのタイプのキャラクターです。どちらのスタイルで表示するか選んでください。あとから設定で変更できます。
       </p>
       <div className={s.styleChoices}>
         <button
@@ -470,16 +489,48 @@ function Step3CharStyle({ form, update }: StepProps) {
           className={`${s.styleCard} ${form.charStyle === "male" ? s.styleCardSelected : ""}`}
           onClick={() => update("charStyle", "male")}
         >
-          <div className={s.styleCardLabel}>男性キャラ</div>
-          <div className={s.styleCardDesc}>力強いデザイン</div>
+          {typeId && (
+            <img
+              src={characterImagePath(typeId, "male")}
+              alt={getCharacterName(typeId, "male")}
+              style={{
+                width: "88px",
+                height: "88px",
+                borderRadius: "50%",
+                objectFit: "cover",
+                objectPosition: "top",
+                marginBottom: "8px",
+              }}
+            />
+          )}
+          <div className={s.styleCardLabel}>
+            {typeId ? getCharacterName(typeId, "male") : "男性キャラ"}
+          </div>
+          <div className={s.styleCardDesc}>男性キャラ</div>
         </button>
         <button
           type="button"
           className={`${s.styleCard} ${form.charStyle === "female" ? s.styleCardSelected : ""}`}
           onClick={() => update("charStyle", "female")}
         >
-          <div className={s.styleCardLabel}>女性キャラ</div>
-          <div className={s.styleCardDesc}>やわらかいデザイン</div>
+          {typeId && (
+            <img
+              src={characterImagePath(typeId, "female")}
+              alt={getCharacterName(typeId, "female")}
+              style={{
+                width: "88px",
+                height: "88px",
+                borderRadius: "50%",
+                objectFit: "cover",
+                objectPosition: "top",
+                marginBottom: "8px",
+              }}
+            />
+          )}
+          <div className={s.styleCardLabel}>
+            {typeId ? getCharacterName(typeId, "female") : "女性キャラ"}
+          </div>
+          <div className={s.styleCardDesc}>女性キャラ</div>
         </button>
       </div>
     </div>

@@ -3,6 +3,7 @@ import type { PotentialTypeId } from "@mj/engine";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
+import { characterImagePath } from "../utils/character-assets";
 import * as s from "./MyTypePage.css";
 
 // ── 定数マッピング ────────────────────────────────────────
@@ -224,7 +225,11 @@ function SingleDisplay({
   return (
     <div className={s.mainCard}>
       <div className={s.mainCardLabel}>Potential Type</div>
-      <div className={s.charPlaceholder}>CHAR</div>
+      <img
+        className={s.charImage}
+        src={characterImagePath(typeId, charStyle)}
+        alt={charName ?? typeId}
+      />
       <div className={s.typeCodeLarge}>{typeId}</div>
       <div className={s.typeNameLarge}>{charInfo?.typeName ?? typeId}</div>
       {charName && <div className={s.characterName}>{charName}</div>}
@@ -251,7 +256,11 @@ function HybridDisplay({
       {/* 主タイプ(大) */}
       <div className={s.hybridPrimary}>
         <div className={s.hybridLabel}>Primary</div>
-        <div className={s.charPlaceholder}>CHAR</div>
+        <img
+          className={s.charImage}
+          src={characterImagePath(primary, charStyle)}
+          alt={primaryCharName ?? primary}
+        />
         <div className={s.typeCodeLarge}>{primary}</div>
         <div className={s.typeNameLarge}>{primaryInfo?.typeName ?? primary}</div>
         {primaryCharName && <div className={s.characterName}>{primaryCharName}</div>}
@@ -259,7 +268,11 @@ function HybridDisplay({
       {/* 副タイプ(小) */}
       <div className={s.hybridSecondary}>
         <div className={s.hybridLabel}>Secondary</div>
-        <div className={s.charPlaceholderSmall}>CHAR</div>
+        <img
+          className={s.charImageSmall}
+          src={characterImagePath(secondary, charStyle)}
+          alt={secondaryCharName ?? secondary}
+        />
         <div className={s.hybridCodeSmall}>{secondary}</div>
         <div className={s.hybridNameSmall}>{secondaryInfo?.typeName ?? secondary}</div>
         {secondaryCharName && (
