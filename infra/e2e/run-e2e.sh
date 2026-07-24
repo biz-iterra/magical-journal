@@ -16,7 +16,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 COMPOSE="docker compose -f docker-compose.e2e.yml -p mj-e2e"
-BASE="http://localhost:3000"
+BASE="http://localhost:3001"
 DEV="U-e2e-user"
 AUTH="Authorization: Bearer dev:${DEV}"
 

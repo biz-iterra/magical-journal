@@ -13,7 +13,8 @@ services:
       context: ../..
       dockerfile: infra/Dockerfile.api
     ports:
-      - "3000:3000"
+      # 本番 api(3000)と衝突しないよう host 側は 3001。本番無停止で e2e を回せる。
+      - "3001:3000"
     environment:
       - NODE_ENV=development # dev:USER_ID トークンを許可(検証用)
       - PORT=3000
