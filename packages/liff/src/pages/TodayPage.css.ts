@@ -1,4 +1,4 @@
-import { keyframes, style } from "@vanilla-extract/css";
+import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 import { vars } from "../styles/theme.css";
 
 // ── ページ全体 ────────────────────────────────────────────
@@ -296,6 +296,82 @@ export const tabActive = style({
   color: vars.color.text,
   fontWeight: 600,
   boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+});
+
+// ── 時盤: 時間帯スライダー ─────────────────────────────────
+// 時盤タブ選択時のみ、盤タブの直下に表示する。12刻を 1:00〜3:00 から
+// 順に並べ、子刻(23:00〜1:00)を末尾に置く(表示順は TodayPage 側で決定)。
+
+export const hourPanel = style({
+  backgroundColor: vars.color.surface,
+  borderRadius: "12px",
+  padding: "12px 14px 10px",
+  marginBottom: "12px",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+});
+
+export const hourValue = style({
+  fontSize: "20px",
+  fontWeight: 700,
+  color: vars.color.accent,
+  textAlign: "center",
+  fontVariantNumeric: "tabular-nums",
+  marginBottom: "6px",
+});
+
+// つまみは指で掴める大きさ(28px)。トラックは 8px。
+export const hourRange = style({
+  WebkitAppearance: "none",
+  appearance: "none",
+  display: "block",
+  width: "100%",
+  height: "28px",
+  margin: 0,
+  padding: 0,
+  backgroundColor: "transparent",
+  cursor: "pointer",
+  ":focus": {
+    outline: "none",
+  },
+});
+
+const trackStyle = {
+  height: "6px",
+  borderRadius: "3px",
+  backgroundColor: vars.color.surfaceMuted,
+  border: `1px solid ${vars.color.border}`,
+} as const;
+
+// トラック(8px)の中央につまみ(28px)を合わせる: (8 - 28) / 2 = -10px
+const thumbStyle = {
+  width: "28px",
+  height: "28px",
+  borderRadius: "50%",
+  backgroundColor: vars.color.accent,
+  border: `2px solid ${vars.color.surface}`,
+  boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+  cursor: "pointer",
+} as const;
+
+globalStyle(`${hourRange}::-webkit-slider-runnable-track`, trackStyle);
+globalStyle(`${hourRange}::-webkit-slider-thumb`, {
+  WebkitAppearance: "none",
+  appearance: "none",
+  marginTop: "-10px",
+  ...thumbStyle,
+});
+globalStyle(`${hourRange}::-moz-range-track`, trackStyle);
+globalStyle(`${hourRange}::-moz-range-thumb`, thumbStyle);
+globalStyle(`${hourRange}:focus-visible::-webkit-slider-thumb`, {
+  boxShadow: `0 0 0 4px ${vars.color.accentFocusRing}`,
+});
+
+export const hourScale = style({
+  display: "flex",
+  justifyContent: "space-between",
+  fontSize: "10px",
+  color: vars.color.textFaint,
+  fontVariantNumeric: "tabular-nums",
 });
 
 // ── 未登録 ────────────────────────────────────────────────

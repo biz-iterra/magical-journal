@@ -13,41 +13,59 @@ export function DirectionMap({ center, directions, height = "300px" }: Direction
   const providerRef = useRef<GoogleMapsProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // 地図本体の生成完了フラグ。オーバーレイ描画はこれが立ってから行う。
+  const [mapReady, setMapReady] = useState(false);
 
+  // ── 地図本体の生成(中心が変わったときだけ) ──────────────
+  // 盤の切替(日/月/年/時盤スライダー)でここを再実行すると地図が作り直され、
+  // タイルの再読込でちらつく。生成と描画は分離する。
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const provider = new GoogleMapsProvider();
     providerRef.current = provider;
+    let cancelled = false;
 
     provider
       .init(container, center, ZOOM_LEVEL)
       .then(() => {
-        provider.clearOverlays();
-
-        for (const dir of directions) {
-          const angle = getSectorAngle(dir.direction);
-          const { color, opacity } = getFortuneColor(dir.fortune);
-          provider.addSectorOverlay(center, angle.start, angle.end, MAP_RADIUS_KM, color, opacity);
-        }
-
-        for (const km of DISTANCE_RINGS_KM) {
-          provider.addDistanceRing(center, km);
-        }
-
+        if (cancelled) return;
+        setMapReady(true);
         setLoading(false);
       })
       .catch(() => {
+        if (cancelled) return;
         setError(clientError("MJ-MAP-003"));
         setLoading(false);
       });
 
     return () => {
+      cancelled = true;
+      setMapReady(false);
       provider.destroy();
       providerRef.current = null;
     };
-  }, [center, directions]);
+  }, [center]);
+
+  // ── 方位オーバーレイ(扇形 + 距離リング)の差し替え ────────
+  // 盤が切り替わったときはこちらだけを走らせ、地図はそのまま使い回す。
+  useEffect(() => {
+    const provider = providerRef.current;
+    if (!mapReady || !provider) return;
+
+    provider.clearOverlays();
+
+    for (const dir of directions) {
+      const angle = getSectorAngle(dir.direction);
+      const { color, opacity } = getFortuneColor(dir.fortune);
+      provider.addSectorOverlay(center, angle.start, angle.end, MAP_RADIUS_KM, color, opacity);
+    }
+
+    for (const km of DISTANCE_RINGS_KM) {
+      provider.addDistanceRing(center, km);
+    }
+  }, [mapReady, center, directions]);
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
   if (!apiKey) {
