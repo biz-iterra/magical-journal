@@ -140,7 +140,27 @@ export const fortuneCharBody = style({
   padding: "12px 14px",
 });
 
+// ── 今日のスケジュール(複数行タイムライン) ─────────────────
+// schedule は「HH:MM〜HH:MM 場所で行動。どうなるか。」の行を \n 区切りで持つ。
+// 1つの塊にせず、各行を1行ずつ独立して積む。
+
+export const scheduleList = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+});
+
+export const scheduleLine = style({
+  fontSize: "14px",
+  lineHeight: 1.6,
+  color: vars.color.textBody,
+  paddingLeft: "10px",
+  borderLeft: `2px solid ${vars.color.accentBorder}`,
+});
+
 // ── 九星情報 ──────────────────────────────────────────────
+// TodayPage 本体では未使用(本命星・月命星は MyTypePage に集約)。
+// MonthlyPage.css が再利用するため定義は残す。
 
 export const starRow = style({
   display: "flex",

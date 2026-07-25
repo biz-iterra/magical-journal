@@ -192,30 +192,28 @@ export function TodayPage() {
   }
 
   const directions = data.directions[activeTab];
+  const sections = data.fortune?.sections ?? null;
+  const charHeading = ownCharacterName ? `${ownCharacterName}からの一言` : "キャラクターからの一言";
 
   return (
     <div className={s.container}>
       <div className={s.dateHeader}>{formatDate(data.date)}</div>
       <h1 className={s.pageTitle}>今日のジャーナル</h1>
 
-      {/* 本命星・月命星 */}
-      <div className={s.starRow}>
-        <div className={s.starChip}>
-          <div className={s.starChipLabel}>本命星</div>
-          <div className={s.starChipValue}>{STAR_NAMES[data.honmeiStar]}</div>
-        </div>
-        <div className={s.starChip}>
-          <div className={s.starChipLabel}>月命星</div>
-          <div className={s.starChipValue}>{STAR_NAMES[data.getsumeiStar]}</div>
-        </div>
-      </div>
-
-      {/* 運勢(3セクション → 単一テキスト → 準備中 の順にフォールバック) */}
+      {/* 1. 今日の運勢(3セクションの運勢 → 単一テキスト → 準備中 の順にフォールバック) */}
       <div className={s.fortuneCard}>
-        <FortuneBody fortune={data.fortune} characterName={ownCharacterName} />
+        <FortuneMain fortune={data.fortune} />
       </div>
 
-      {/* 方位タブ切替 */}
+      {/* 2. {キャラ名}からの一言(運勢の直下)。sections がある時のみ表示 */}
+      {sections?.characterNote && (
+        <div className={s.fortuneCard}>
+          <div className={s.fortuneSectionTitle}>{charHeading}</div>
+          <p className={s.fortuneCharBody}>{sections.characterNote}</p>
+        </div>
+      )}
+
+      {/* 3. 方位マップ(盤タブ + 中宮 + 方位グリッド + 地図) */}
       <div className={s.tabRow}>
         {(["day", "month", "year"] as const).map((key) => (
           <button
@@ -237,84 +235,81 @@ export function TodayPage() {
       {/* 方位グリッド */}
       <DirectionGrid directions={directions} />
 
-      {/* 方位マップ */}
+      {/* 方位マップ(地図) */}
       {data.homeLatLng && (
         <div className={s.mapSection}>
           <DirectionMap center={data.homeLatLng} directions={directions} />
+        </div>
+      )}
+
+      {/* 4. 今日のスケジュール(方位マップの下)。sections がある時のみ表示 */}
+      {sections?.schedule && (
+        <div className={s.fortuneCard}>
+          <div className={s.fortuneSectionTitle}>今日のスケジュール</div>
+          <ScheduleList schedule={sections.schedule} />
         </div>
       )}
     </div>
   );
 }
 
-// ── 運勢本文(3セクション表示) ───────────────────────────
+// ── 運勢本文(今日の運勢) ────────────────────────────────
 
 /**
- * 運勢の本文を表示する。
+ * 「今日の運勢」ブロックの本文を表示する。
  *
- * 1. fortune.sections があれば 3セクション(運勢 / スケジュール / キャラの一言)を縦表示。
- *    セクション③の見出しはキャラ名を使い、取得できなければ汎用見出しにフォールバック。
- * 2. sections が null で text があれば従来どおり単一テキスト(後方互換)。
- * 3. fortune 自体が null(未生成/生成失敗)なら穏やかな「準備中」表示。
+ * 1. fortune.sections.fortune があれば 見出し「今日の運勢」+ 本文。
+ * 2. sections が null で text があれば従来どおり単一テキスト(後方互換・見出しなし)。
+ * 3. fortune 自体が null / 本文が空なら穏やかな「準備中」表示。
+ *
+ * ※ 一言・スケジュールは呼び出し側で別ブロックとして配置する。
  */
-function FortuneBody({
-  fortune,
-  characterName,
-}: {
-  fortune: TodayResponse["fortune"];
-  characterName: string | null;
-}) {
-  // 3. 未生成/生成失敗
-  if (!fortune) {
-    return (
-      <p className={s.fortuneEmpty}>
-        今日のジャーナルは準備中です。
-        <br />
-        しばらくしてからもう一度ご覧ください。
-      </p>
-    );
-  }
-
-  // 1. 3セクション
-  if (fortune.sections) {
-    const { fortune: fortuneText, schedule, characterNote } = fortune.sections;
-    const charHeading = characterName ? `${characterName}からの一言` : "キャラクターからの一言";
+function FortuneMain({ fortune }: { fortune: TodayResponse["fortune"] }) {
+  // 1. 3セクションの運勢
+  if (fortune?.sections?.fortune) {
     return (
       <>
-        {fortuneText && (
-          <div className={s.fortuneSection}>
-            <div className={s.fortuneSectionTitle}>今日の運勢</div>
-            <p className={s.fortuneText}>{fortuneText}</p>
-          </div>
-        )}
-        {schedule && (
-          <div className={s.fortuneSection}>
-            <div className={s.fortuneSectionTitle}>今日のスケジュール</div>
-            <p className={s.fortuneText}>{schedule}</p>
-          </div>
-        )}
-        {characterNote && (
-          <div className={s.fortuneSection}>
-            <div className={s.fortuneSectionTitle}>{charHeading}</div>
-            <p className={s.fortuneCharBody}>{characterNote}</p>
-          </div>
-        )}
+        <div className={s.fortuneSectionTitle}>今日の運勢</div>
+        <p className={s.fortuneText}>{fortune.sections.fortune}</p>
       </>
     );
   }
 
-  // 2. 後方互換: 単一テキスト
-  if (fortune.text) {
+  // 2. 後方互換: 単一テキスト(sections が無い場合)
+  if (fortune && !fortune.sections && fortune.text) {
     return <p className={s.fortuneText}>{fortune.text}</p>;
   }
 
-  // フォールバック(text も空)
+  // 3. 未生成/生成失敗/本文が空
   return (
     <p className={s.fortuneEmpty}>
       今日のジャーナルは準備中です。
       <br />
       しばらくしてからもう一度ご覧ください。
     </p>
+  );
+}
+
+// ── 今日のスケジュール(複数行タイムライン) ───────────────
+
+/**
+ * schedule 文字列を \n で分割し、各行を独立した行として描画する。
+ * 1つの塊のベタ表示にせず、タイムラインの各行が1行ずつ並ぶ。
+ */
+function ScheduleList({ schedule }: { schedule: string }) {
+  const lines = schedule
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  return (
+    <div className={s.scheduleList}>
+      {lines.map((line, i) => (
+        <p key={`${i}-${line}`} className={s.scheduleLine}>
+          {line}
+        </p>
+      ))}
+    </div>
   );
 }
 
