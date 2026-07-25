@@ -53,9 +53,17 @@ export const vars = createThemeContract({
     fortuneBorder: null,
     fortuneText: null, // 吉テキスト・成功
     // ── 意味色: 凶(misfortune) ── 固定 ──────────────────────
+    // 赤系。エラーメッセージ表示と共用するため色味を変えない。
     misfortuneBg: null,
     misfortuneBorder: null,
     misfortuneText: null, // 凶・エラーテキスト
+    // ── 意味色: 方位盤の凶 ── 固定 ──────────────────────────
+    // 方位表示の凶はグレー(方位マップの #6b7280 と同系)。吉=緑との対比を
+    // 「色相」ではなく「彩度・濃さ」で作る。中立セル(surfaceSubtle)より濃くする。
+    // エラー表示の赤(misfortune*)とは用途が別なので独立トークンにする。
+    dirMisfortuneBg: null,
+    dirMisfortuneBorder: null,
+    dirMisfortuneText: null,
     // ── 状態色 ── 固定 ──────────────────────────────────────
     danger: null, // 必須マーカー等の赤
     warningText: null, // 注記(マスターナンバー等)
@@ -112,6 +120,10 @@ createGlobalTheme(":root", vars, {
     misfortuneBg: "#fef2f2",
     misfortuneBorder: "#fecaca",
     misfortuneText: "#dc2626",
+
+    dirMisfortuneBg: "#e5e7eb",
+    dirMisfortuneBorder: "#9ca3af",
+    dirMisfortuneText: "#4b5563",
 
     danger: "#ef4444",
     warningText: "#d97706",

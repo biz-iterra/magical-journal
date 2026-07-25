@@ -3,48 +3,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
 import { useCharacterTheme } from "../components/CharacterTheme";
+import { DirectionCompass } from "../components/direction-compass";
 import { DirectionMap } from "../components/direction-map";
 import * as s from "./TodayPage.css";
 
 // ── 定数 ─────────────────────────────────────────────────
-
-const STAR_NAMES: Record<number, string> = {
-  1: "一白水星",
-  2: "二黒土星",
-  3: "三碧木星",
-  4: "四緑木星",
-  5: "五黄土星",
-  6: "六白金星",
-  7: "七赤金星",
-  8: "八白土星",
-  9: "九紫火星",
-};
-
-const DIR_LABELS: Record<Direction8, string> = {
-  N: "北",
-  NE: "北東",
-  E: "東",
-  SE: "南東",
-  S: "南",
-  SW: "南西",
-  W: "西",
-  NW: "北西",
-};
-
-const MISFORTUNE_LABELS: Record<MisfortuneType, string> = {
-  goou_satsu: "五黄殺",
-  anken_satsu: "暗剣殺",
-  saiha: "歳破",
-  geppa: "月破",
-  nippa: "日破",
-  jouiTaichu: "定位対冲",
-  honmei_satsu: "本命殺",
-  honmei_tekisatsu: "本命的殺",
-  getsumei_satsu: "月命殺",
-  getsumei_tekisatsu: "月命的殺",
-};
-
-const DIR_ORDER: Direction8[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
 type TabKey = "day" | "month" | "year" | "hour";
 const TAB_LABELS: Record<TabKey, string> = {
@@ -121,19 +84,6 @@ function formatDate(dateStr: string): string {
   return `${y}年${Number(m)}月${Number(d)}日（${dow}）`;
 }
 
-function fortuneStyle(fortune: DirectionFortune): string {
-  switch (fortune) {
-    case "great_fortune":
-      return s.dirCellGreat;
-    case "fortune":
-      return s.dirCellFortune;
-    case "misfortune":
-      return s.dirCellMisfortune;
-    default:
-      return s.dirCellNeutral;
-  }
-}
-
 /**
  * 現在時刻(端末のローカル時刻)が属する刻の index を返す。
  * 23 時台・0 時台 = 0(子刻)、1〜2 時 = 1、3〜4 時 = 2、… 21〜22 時 = 11。
@@ -153,17 +103,6 @@ function hourDisplayRank(index: number): number {
 /** hourly を表示順(1,2,…,11,0)に並べ替える。API の index 昇順に依存しない。 */
 function orderHourly(hourly: HourlyItem[]): HourlyItem[] {
   return [...hourly].sort((a, b) => hourDisplayRank(a.index) - hourDisplayRank(b.index));
-}
-
-function fortuneLabel(fortune: DirectionFortune): string | null {
-  switch (fortune) {
-    case "great_fortune":
-      return "大吉";
-    case "fortune":
-      return "吉";
-    default:
-      return null;
-  }
 }
 
 // ── コンポーネント ─────────────────────────────────────────
@@ -257,6 +196,16 @@ export function TodayPage() {
     effectiveTab === "hour"
       ? (selectedHour?.directions ?? NO_DIRECTIONS)
       : data.directions[effectiveTab];
+
+  // 中宮の星。API 応答が中宮を持つのは日盤と時盤のみ(月盤・年盤は未提供)。
+  // 持たない盤では null を渡し、盤の中央は中心の目印だけになる。
+  const banCenter: StarNumber | null =
+    effectiveTab === "day"
+      ? data.dayBan.center
+      : effectiveTab === "hour"
+        ? (selectedHour?.center ?? null)
+        : null;
+
   const sections = data.fortune?.sections ?? null;
   const charHeading = ownCharacterName ? `${ownCharacterName}からの一言` : "キャラクターからの一言";
 
@@ -302,16 +251,8 @@ export function TodayPage() {
         />
       )}
 
-      {/* 中宮表示 */}
-      {effectiveTab === "day" && (
-        <div className={s.sectionTitle}>中宮: {STAR_NAMES[data.dayBan.center]}</div>
-      )}
-      {effectiveTab === "hour" && selectedHour && (
-        <div className={s.sectionTitle}>中宮: {STAR_NAMES[selectedHour.center]}</div>
-      )}
-
-      {/* 方位グリッド */}
-      <DirectionGrid directions={directions} />
+      {/* 方位盤(羅針盤。中宮は盤の中央に統合表示する) */}
+      <DirectionCompass directions={directions} center={banCenter} />
 
       {/* 方位マップ(地図) */}
       {data.homeLatLng && (
@@ -435,37 +376,6 @@ function HourSlider({
         <span>{first?.label}</span>
         <span>{last?.label}</span>
       </div>
-    </div>
-  );
-}
-
-// ── 方位グリッド ──────────────────────────────────────────
-
-function DirectionGrid({ directions }: { directions: DirectionItem[] }) {
-  const dirMap = new Map(directions.map((d) => [d.direction, d]));
-
-  return (
-    <div className={s.directionGrid}>
-      {DIR_ORDER.map((dir) => {
-        const item = dirMap.get(dir);
-        if (!item) return null;
-
-        const cellStyle = fortuneStyle(item.fortune);
-        const goodLabel = fortuneLabel(item.fortune);
-
-        return (
-          <div key={dir} className={`${s.dirCell} ${cellStyle}`}>
-            <span className={s.dirLabel}>{DIR_LABELS[dir]}</span>
-            <span className={s.dirStar}>{STAR_NAMES[item.star]?.slice(0, 2)}</span>
-            {goodLabel && <span className={s.dirBadgeGood}>{goodLabel}</span>}
-            {item.misfortunes.length > 0 && (
-              <span className={s.dirBadge}>
-                {item.misfortunes.map((m) => MISFORTUNE_LABELS[m]?.slice(0, 3)).join("・")}
-              </span>
-            )}
-          </div>
-        );
-      })}
     </div>
   );
 }

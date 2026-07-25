@@ -192,79 +192,8 @@ export const starChipValue = style({
 });
 
 // ── 方位セクション ───────────────────────────────────────
-
-export const sectionTitle = style({
-  fontSize: "13px",
-  fontWeight: 600,
-  color: vars.color.textSecondary,
-  marginBottom: "8px",
-  marginTop: "16px",
-});
-
-export const directionGrid = style({
-  display: "grid",
-  gridTemplateColumns: "repeat(4, 1fr)",
-  gap: "6px",
-  marginBottom: "12px",
-});
-
-export const dirCell = style({
-  borderRadius: "8px",
-  padding: "10px 4px",
-  textAlign: "center",
-  minHeight: "56px",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
-  alignItems: "center",
-  gap: "2px",
-});
-
-export const dirCellGreat = style({
-  backgroundColor: vars.color.fortuneGreatBg,
-  border: `1px solid ${vars.color.fortuneGreatBorder}`,
-});
-
-export const dirCellFortune = style({
-  backgroundColor: vars.color.fortuneBg,
-  border: `1px solid ${vars.color.fortuneBorder}`,
-});
-
-export const dirCellNeutral = style({
-  backgroundColor: vars.color.surfaceSubtle,
-  border: `1px solid ${vars.color.border}`,
-});
-
-export const dirCellMisfortune = style({
-  backgroundColor: vars.color.misfortuneBg,
-  border: `1px solid ${vars.color.misfortuneBorder}`,
-});
-
-export const dirLabel = style({
-  fontSize: "11px",
-  fontWeight: 600,
-  color: vars.color.textSecondary,
-});
-
-export const dirStar = style({
-  fontSize: "10px",
-  color: vars.color.textMuted,
-});
-
-export const dirBadge = style({
-  fontSize: "9px",
-  fontWeight: 600,
-  color: vars.color.misfortuneText,
-  marginTop: "2px",
-  lineHeight: 1.2,
-});
-
-export const dirBadgeGood = style({
-  fontSize: "9px",
-  fontWeight: 600,
-  color: vars.color.fortuneText,
-  marginTop: "2px",
-});
+// 方位盤(羅針盤)の見た目とセル配色は components/direction-compass に集約した
+// (中宮も盤の中央に統合したため、ここにあった見出し・グリッドのスタイルは不要)。
 
 // ── タブ切替 ──────────────────────────────────────────────
 

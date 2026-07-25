@@ -2,6 +2,7 @@ import type { Direction8, DirectionFortune, MisfortuneType, StarNumber } from "@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
+import { DirectionCompass } from "../components/direction-compass";
 import { DirectionMap } from "../components/direction-map";
 import * as s from "./MonthlyPage.css";
 
@@ -19,32 +20,6 @@ const STAR_NAMES: Record<number, string> = {
   8: "八白土星",
   9: "九紫火星",
 };
-
-const DIR_LABELS: Record<Direction8, string> = {
-  N: "北",
-  NE: "北東",
-  E: "東",
-  SE: "南東",
-  S: "南",
-  SW: "南西",
-  W: "西",
-  NW: "北西",
-};
-
-const MISFORTUNE_LABELS: Record<MisfortuneType, string> = {
-  goou_satsu: "五黄殺",
-  anken_satsu: "暗剣殺",
-  saiha: "歳破",
-  geppa: "月破",
-  nippa: "日破",
-  jouiTaichu: "定位対冲",
-  honmei_satsu: "本命殺",
-  honmei_tekisatsu: "本命的殺",
-  getsumei_satsu: "月命殺",
-  getsumei_tekisatsu: "月命的殺",
-};
-
-const DIR_ORDER: Direction8[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
 // ── API レスポンス型 ────────────────────────────────────────
 
@@ -79,30 +54,6 @@ interface MonthlyResponse {
 
 function formatKigakuMonth(year: number, month: number): string {
   return `${year}年 ${month}月（気学）`;
-}
-
-function fortuneStyle(fortune: DirectionFortune): string {
-  switch (fortune) {
-    case "great_fortune":
-      return s.dirCellGreat;
-    case "fortune":
-      return s.dirCellFortune;
-    case "misfortune":
-      return s.dirCellMisfortune;
-    default:
-      return s.dirCellNeutral;
-  }
-}
-
-function fortuneLabel(fortune: DirectionFortune): string | null {
-  switch (fortune) {
-    case "great_fortune":
-      return "大吉";
-    case "fortune":
-      return "吉";
-    default:
-      return null;
-  }
 }
 
 // ── コンポーネント ─────────────────────────────────────────
@@ -191,11 +142,8 @@ export function MonthlyPage() {
         )}
       </div>
 
-      {/* 中宮表示(月盤) */}
-      <div className={s.sectionTitle}>中宮: {STAR_NAMES[data.monthBan.center]}</div>
-
-      {/* 方位グリッド(月盤) */}
-      <DirectionGrid directions={directions} />
+      {/* 方位盤(月盤。中宮は盤の中央に統合表示する) */}
+      <DirectionCompass directions={directions} center={data.monthBan.center} />
 
       {/* 方位マップ */}
       {data.homeLatLng && (
@@ -203,37 +151,6 @@ export function MonthlyPage() {
           <DirectionMap center={data.homeLatLng} directions={directions} />
         </div>
       )}
-    </div>
-  );
-}
-
-// ── 方位グリッド ──────────────────────────────────────────
-
-function DirectionGrid({ directions }: { directions: DirectionItem[] }) {
-  const dirMap = new Map(directions.map((d) => [d.direction, d]));
-
-  return (
-    <div className={s.directionGrid}>
-      {DIR_ORDER.map((dir) => {
-        const item = dirMap.get(dir);
-        if (!item) return null;
-
-        const cellStyle = fortuneStyle(item.fortune);
-        const goodLabel = fortuneLabel(item.fortune);
-
-        return (
-          <div key={dir} className={`${s.dirCell} ${cellStyle}`}>
-            <span className={s.dirLabel}>{DIR_LABELS[dir]}</span>
-            <span className={s.dirStar}>{STAR_NAMES[item.star]?.slice(0, 2)}</span>
-            {goodLabel && <span className={s.dirBadgeGood}>{goodLabel}</span>}
-            {item.misfortunes.length > 0 && (
-              <span className={s.dirBadge}>
-                {item.misfortunes.map((m) => MISFORTUNE_LABELS[m]?.slice(0, 3)).join("・")}
-              </span>
-            )}
-          </div>
-        );
-      })}
     </div>
   );
 }

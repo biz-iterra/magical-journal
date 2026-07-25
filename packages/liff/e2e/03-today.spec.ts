@@ -5,10 +5,13 @@ import { FIXTURE, waitAppReady } from "./helpers";
  * §C 登録済みユーザーの再訪 + §E 今日のページ (方位)
  *
  * 02-register で mock-user を登録済みの前提。/ を開くと登録画面ではなく
- * 今日のページが表示され、本命星/月命星・方位グリッド・盤切替タブが機能する。
+ * 今日のページが表示され、本命星/月命星・方位盤 (羅針盤)・盤切替タブが機能する。
  *
  * 注: dev モードは Maps キー未設定 → 座標なし登録のため方位マップ (地図描画) は
- * 表示されない想定。方位グリッドと盤データがあれば合格 (docs/09 / 依頼の制約)。
+ * 表示されない想定。方位盤と盤データがあれば合格 (docs/09 / 依頼の制約)。
+ *
+ * 方位盤は 3×3 の羅針盤レイアウトで、中宮は盤の中央セルに「中宮」+ 星名として
+ * 表示される (旧 UI の「中宮: 〇〇」見出しは廃止)。
  */
 test.describe("登録済み再訪 / 今日のページ", () => {
   test("C-1 + E-1/E-2: 今日のページが表示され盤タブが切り替わる", async ({ page }) => {
@@ -23,22 +26,22 @@ test.describe("登録済み再訪 / 今日のページ", () => {
     await expect(page.getByText(FIXTURE.expected.honmei)).toBeVisible();
     await expect(page.getByText(FIXTURE.expected.getsumei)).toBeVisible();
 
-    // E-1: 方位グリッド (8 方位) が表示される
+    // E-1: 方位盤 (8 方位) が表示される
     for (const dir of ["北", "北東", "東", "南東", "南", "南西", "西", "北西"]) {
       await expect(page.getByText(dir, { exact: true }).first()).toBeVisible();
     }
 
-    // 日盤タブ選択時の中宮表示
-    await expect(page.getByText(/中宮:/)).toBeVisible();
+    // 日盤タブ選択時の中宮表示 (盤の中央セル)
+    await expect(page.getByText("中宮", { exact: true })).toBeVisible();
 
     // E-2: 盤切替タブ (日盤/月盤/年盤)
     await expect(page.getByRole("button", { name: "日盤" })).toBeVisible();
     await page.getByRole("button", { name: "月盤" }).click();
-    // 月盤に切り替えると中宮ラベル (日盤専用) が消える
-    await expect(page.getByText(/中宮:/)).toHaveCount(0);
+    // 月盤に切り替えると中宮ラベル (日盤・時盤のみ提供) が消える
+    await expect(page.getByText("中宮", { exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "年盤" }).click();
     await page.getByRole("button", { name: "日盤" }).click();
-    await expect(page.getByText(/中宮:/)).toBeVisible();
+    await expect(page.getByText("中宮", { exact: true })).toBeVisible();
 
     await page.screenshot({ path: "e2e/screenshots/today.png", fullPage: true });
   });
