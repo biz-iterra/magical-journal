@@ -5,8 +5,9 @@ import { GoogleMapsProvider } from "./google-maps-provider";
 import type { DirectionMapProps } from "./types";
 
 const MAP_RADIUS_KM = 100;
-// 生活圏(10km リング前後)が読み取れる縮尺。小さいと地名が潰れて方角が分かりにくい。
-const ZOOM_LEVEL = 11;
+// 駅周辺・徒歩圏が読み取れる縮尺(Google マップの体感に寄せる)。
+// 小さいと地名が潰れて、どの方角に何があるのか分からなくなる。
+const ZOOM_LEVEL = 13;
 
 export function DirectionMap({ center, directions, height = "300px" }: DirectionMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
