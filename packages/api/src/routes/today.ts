@@ -1,7 +1,7 @@
 /**
  * GET /api/today
  *
- * 今日の日盤 + 方位判定 + daily_fortunes を返す。
+ * 今日の日盤 + 方位判定 + 時盤(12刻) + daily_fortunes を返す。
  * 方位判定は engine を直接呼ぶ(保存済みのバッチ結果ではなくリアルタイム計算)。
  *
  * 文章(3セクション)は未生成なら初回アクセス時に同期生成してキャッシュする
@@ -17,6 +17,7 @@ import { Hono } from "hono";
 import { getDailyFortune, getProfile, getUserByLineId, saveDailyFortune } from "../db/queries.js";
 import { fail } from "../errors.js";
 import { buildGenerationProviders } from "../services/generation.js";
+import { buildHourlyDirections } from "../services/hourly.js";
 import type { AppEnv } from "../types.js";
 
 const today = new Hono<AppEnv>();
@@ -63,6 +64,11 @@ today.get("/", async (c) => {
   const monthJunishi = calendar.getMonthJunishi(kigakuYear, kigakuMonth);
   const yearDirections = judgeDirections(yearBan, honmeiStar, getsumeiStar, yearJunishi);
   const monthDirections = judgeDirections(monthBan, honmeiStar, getsumeiStar, monthJunishi);
+
+  // 時盤(12刻)。engine の純関数のみで完結する同期処理なので、
+  // 後段の文章生成の成否に関わらず必ず返す(グレースフル方針)。
+  const tonpu = calendar.getDayTonpuMode(dateStr);
+  const hourly = buildHourlyDirections(dayJunishi, tonpu, honmeiStar, getsumeiStar);
 
   // 日次運勢テキスト(3セクション)。未生成なら初回アクセス時に同期生成してキャッシュする。
   // バッチが先に生成済みならこのキャッシュヒットで LLM を呼ばない。
@@ -139,6 +145,8 @@ today.get("/", async (c) => {
       month: monthDirections,
       year: yearDirections,
     },
+    // 時盤: 12刻すべてを index 順(0=子刻 … 11=亥刻)で返す(UI はスライダーで切替)
+    hourly,
     fortune: fortune
       ? {
           // 後方互換: 従来の単一テキスト(= 運勢セクション相当)
