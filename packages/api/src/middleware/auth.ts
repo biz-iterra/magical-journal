@@ -63,6 +63,13 @@ export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
     const result = await verifyLineIdToken(token, env.lineLoginChannelId);
 
     if (result.error || !result.sub) {
+      // 原因調査のため LINE 側の理由をログに残す(期限切れ/チャネル不一致の切り分け用)。
+      // ★トークン本体・ユーザー ID は出さない。
+      console.error(
+        `[auth] LINE IDトークン検証に失敗: error=${result.error ?? "(none)"} description=${
+          result.error_description ?? "(none)"
+        }`,
+      );
       return fail(c, "MJ-AUTH-003");
     }
 

@@ -1,4 +1,5 @@
 import { clientError, formatError } from "../errors";
+import { clearReloginFlag, reloginForExpiredToken } from "../liff/relogin";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -63,6 +64,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     } | null;
 
     if (body?.error && body.code) {
+      // ID トークン期限切れ(MJ-AUTH-003)は一度だけ自動で再ログインして回復する。
+      // LIFF の isLoggedIn() は期限切れを検知できないため、ここで拾うしかない。
+      if (body.code === "MJ-AUTH-003" && reloginForExpiredToken()) {
+        // login() はリダイレクトするので、この Promise は解決されないまま画面が遷移する
+        return new Promise<T>(() => {});
+      }
       throw new ApiError(response.status, formatError(body.error, body.code), body.code);
     }
     if (body?.error) {
@@ -71,6 +78,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     // 構造化されていない応答(ネットワーク層のエラー等)
     throw new ApiError(response.status, clientError("MJ-NET-001"), "MJ-NET-001");
   }
+
+  // 認証が通ったので、次回の期限切れでも自動回復できるようフラグを戻す
+  clearReloginFlag();
 
   return response.json() as Promise<T>;
 }

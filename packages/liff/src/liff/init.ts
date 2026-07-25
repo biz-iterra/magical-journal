@@ -13,6 +13,7 @@ interface Liff {
   init(config: { liffId: string }): Promise<void>;
   isLoggedIn(): boolean;
   login(config?: { redirectUri?: string }): void;
+  logout(): void;
   getProfile(): Promise<LiffProfile>;
   getIDToken(): string | null;
   isInClient(): boolean;
