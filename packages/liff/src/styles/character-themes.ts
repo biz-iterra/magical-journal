@@ -6,15 +6,16 @@ import { vars } from "./theme.css";
  * キャラテーマ色の単一集約(P-A で実 HEX に差し替える唯一のファイル)
  * ============================================================================
  *
- * PLACEHOLDER: P-A(キャラ確定 HEX)未確定のため、キャラリポジトリ
- *   journal-character-generator/characters/NN-name/appearance.yaml の
- *   color_palette(自然言語記述)からの近似プレースホルダを置いている。
- *   docs/06 は「独自の色を発明しない」を厳守事項とするため、これらは確定色ではない。
+ * P-A 確定済み(2026-07-26 人間承認)。下表が確定値。
  *
- * P-A 確定後にやること(後続 = 3-2):
- *   1. 下表 CHARACTER_THEME_SEED の primary / accent / onAccent を実 HEX に置換する
- *      (このファイルのこの表だけを直す。他は触らない)。
- *   2. 各 accent で onAccent が WCAG AA(コントラスト >= 4.5)を満たすことを再確認する。
+ * 決め方(docs/06「独自の色を発明しない」を守るため、色は必ず出典を持つ):
+ *   - 原則: キャラ画像(24枚)から識別色を抽出する(`scripts/extract-character-colors.mjs`)。
+ *   - 例外【記述】: キャラ設定 appearance.yaml の色記述と実画像が食い違うキャラは、
+ *     人間判断により**設定の記述を正**とし、記述由来の色を採用した(IR+ / IL+ / PR- / EL-)。
+ *   - 例外【選択】: ER+(虹)はパステル多色で単色に定まらないため、人間が淡金系を選択。
+ *     accent は primary の色相・彩度を保ったまま明度のみ下げて導出している。
+ *   - accent は全て白文字で WCAG AA(コントラスト >= 4.5)を満たすことを実測で確認済み
+ *     (各行末の AA 値。最小 4.55)。色を変える場合は必ず再計算すること。
  *
  * 各シードは 3 値のみ:
  *   - primary : キャラの識別色(明るめの主色。ラベル/装飾の将来利用・3-2 用)
@@ -42,29 +43,29 @@ export interface CharacterThemeSeed {
 }
 
 export const CHARACTER_THEME_SEED: Readonly<Record<PotentialTypeId, CharacterThemeSeed>> = {
-  // 光 — やわらかい黄〜クリーム / 淡いオレンジ
+  // 光 — やわらかい黄〜クリーム / 淡いオレンジ【記述】AA 4.65
   "IR+": { primary: "#f2c14e", accent: "#a56617", onAccent: "#ffffff" },
-  // 月 — 深い藍〜紺 / 銀・淡い水色
-  "IR-": { primary: "#5a6ba8", accent: "#3a4a85", onAccent: "#ffffff" },
-  // 風 — 若草色〜ミントグリーン / 淡い水色
+  // 月 — 深い藍〜紺 / 銀・淡い水色【画像】AA 9.55
+  "IR-": { primary: "#3c4463", accent: "#3c4463", onAccent: "#ffffff" },
+  // 風 — 若草色〜ミントグリーン / 淡い水色【記述】AA 4.64
   "IL+": { primary: "#7fc7a4", accent: "#268459", onAccent: "#ffffff" },
-  // 霧 — くすんだグレー〜モーブ / 淡いブルーグレー
-  "IL-": { primary: "#a99fb5", accent: "#6e6480", onAccent: "#ffffff" },
-  // 炎 — 鮮やかな赤〜オレンジ / 明るいイエロー
-  "PR+": { primary: "#f0663e", accent: "#c93a17", onAccent: "#ffffff" },
-  // 滝 — 深い青緑〜ターコイズ / 明るい水色
+  // 霧 — くすんだグレー〜モーブ / 淡いブルーグレー【画像】AA 4.60
+  "IL-": { primary: "#b79da4", accent: "#916b75", onAccent: "#ffffff" },
+  // 炎 — 鮮やかな赤〜オレンジ / 明るいイエロー【画像】AA 4.63
+  "PR+": { primary: "#ef3934", accent: "#e71812", onAccent: "#ffffff" },
+  // 滝 — 深い青緑〜ターコイズ / 明るい水色【記述】AA 4.95
   "PR-": { primary: "#3fb0b8", accent: "#0e7c86", onAccent: "#ffffff" },
-  // 山 — 深緑〜濃いカーキ / 岩のグレー
-  "PL+": { primary: "#6e8b5a", accent: "#4a6238", onAccent: "#ffffff" },
-  // 岩 — アースカラーの茶〜グレージュ / 苔の緑
-  "PL-": { primary: "#a38c74", accent: "#6f5a44", onAccent: "#ffffff" },
-  // 虹 — プラチナ+虹色 / 七色パステル(単色プレースホルダ=ペリウィンクル。紫グラデは不可)
-  "ER+": { primary: "#a9b4e8", accent: "#5a63c0", onAccent: "#ffffff" },
-  // 露 — 透明感のある淡い水色〜シルバー / 淡いミント
-  "ER-": { primary: "#86c6d6", accent: "#277a93", onAccent: "#ffffff" },
-  // 朝陽 — あたたかいオレンジ〜桃色 / やわらかい黄金色
-  "EL+": { primary: "#f5a65b", accent: "#b45b26", onAccent: "#ffffff" },
-  // 湖 — 静かな深い藍緑〜青 / 翡翠色
+  // 山 — 深緑〜濃いカーキ / 岩のグレー【画像】AA 5.57
+  "PL+": { primary: "#6a6a49", accent: "#6a6a49", onAccent: "#ffffff" },
+  // 岩 — アースカラーの茶〜グレージュ / 苔の緑【画像】AA 4.63
+  "PL-": { primary: "#c1a685", accent: "#8f6f49", onAccent: "#ffffff" },
+  // 虹 — プラチナ+虹色 / 七色パステル(多色のため単色化。人間選択=淡金)【選択】AA 4.55
+  "ER+": { primary: "#f7e3a3", accent: "#91720d", onAccent: "#ffffff" },
+  // 露 — 透明感のある淡い水色〜シルバー / 淡いミント【画像】AA 4.61
+  "ER-": { primary: "#a2b9d6", accent: "#4c77ae", onAccent: "#ffffff" },
+  // 朝陽 — あたたかいオレンジ〜桃色 / やわらかい黄金色【画像】AA 4.60
+  "EL+": { primary: "#e78e5d", accent: "#bf561c", onAccent: "#ffffff" },
+  // 湖 — 静かな深い藍緑〜青 / 翡翠色【記述】AA 6.02
   "EL-": { primary: "#3e9c8f", accent: "#1f6e68", onAccent: "#ffffff" },
 };
 
