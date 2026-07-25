@@ -27,7 +27,8 @@ export function getFortuneColor(fortune: DirectionFortune): { color: string; opa
     case "fortune":
       return { color: "#4ade80", opacity: 0.25 };
     case "misfortune":
-      return { color: "#ef4444", opacity: 0.3 };
+      // 凶方位はグレー。中立(下の default)と同系色なので、濃さで区別する。
+      return { color: "#6b7280", opacity: 0.35 };
     default:
       return { color: "#9ca3af", opacity: 0.08 };
   }

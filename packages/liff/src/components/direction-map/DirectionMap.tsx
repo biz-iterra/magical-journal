@@ -142,7 +142,7 @@ function MapLegend() {
   const items = [
     { label: "大吉", color: "#22c55e" },
     { label: "吉", color: "#4ade80" },
-    { label: "凶", color: "#ef4444" },
+    { label: "凶", color: "#6b7280" },
     { label: "中立", color: "#d1d5db" },
   ];
 
