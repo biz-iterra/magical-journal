@@ -9,11 +9,16 @@
  * 「色相・彩度を保ったまま明度だけを下げて」白文字 WCAG AA(>= 4.5)を満たす値にする。
  *
  * 抽出の考え方:
- *   1. 白背景・線画の黒・無彩色・淡い肌色を画素レベルで除外する
+ *   1. 白背景・線画の黒・無彩色・肌色を画素レベルで除外する
  *   2. 残った画素の色相ヒストグラムを、彩度^2 x 明度重み で重み付けする
- *   3. 12 キャラ 24 枚の平均ヒストグラム(= 肌・髪の茶など全キャラ共通の色)で割り、
- *      そのキャラに固有の色相(= 識別色)を選ぶ(TF-IDF と同じ発想)
- *   4. 選んだ色相の帯から彩度上位の画素を平均して代表色(primary)とする
+ *   3. キャラごとの識別部位(髪・上着)の色相レンジ IDENTITY_HUE_RANGE の中で、
+ *      最も面積の大きい色相帯を選ぶ
+ *   4. その色相帯にある彩度上位の画素を平均して代表色(primary)とする
+ *   5. primary の色相・彩度を保ったまま明度だけ下げて accent を作る
+ *
+ * IDENTITY_HUE_RANGE を使わない「完全自動」の選択結果も参考値として併記する
+ * (12 キャラ中央値ヒストグラムで割る TF-IDF 方式。肌・髪の茶に引っ張られる
+ *  ケースがあるため採用値には使わない)。
  *
  * - 依存追加なし: webp のデコードは ffmpeg(scripts/import-characters.mjs と同じ前提)
  * - 画像は読み取りのみ。リポジトリのファイルは書き換えない
@@ -108,8 +113,7 @@ const IDENTITY_HUE_RANGE = {
 
 /** 人間の確認が要る点(色見本 HTML と報告に出す) */
 const NOTES = {
-  "ER+":
-    "虹キャラのためパステル多色。単色に確定できない(候補: 藤色〜桃 / 淡金 / 淡水色)。要判断",
+  "ER+": "虹キャラのためパステル多色。単色に確定できない(候補: 藤色〜桃 / 淡金 / 淡水色)。要判断",
 };
 
 // ── 色ユーティリティ ────────────────────────────────────────
@@ -154,10 +158,7 @@ function hslToRgb(h, s, l) {
 }
 
 function toHex([r, g, b]) {
-  const part = (v) =>
-    Math.max(0, Math.min(255, v))
-      .toString(16)
-      .padStart(2, "0");
+  const part = (v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0");
   return `#${part(r)}${part(g)}${part(b)}`;
 }
 
@@ -460,7 +461,11 @@ function representativeColor(pixelSets, dominantHue, range) {
     b += p.b;
   }
   return {
-    hex: toHex([Math.round(r / top.length), Math.round(g / top.length), Math.round(b / top.length)]),
+    hex: toHex([
+      Math.round(r / top.length),
+      Math.round(g / top.length),
+      Math.round(b / top.length),
+    ]),
     sampleCount: picked.length,
   };
 }
@@ -636,7 +641,11 @@ function buildHtml(results, currentSeed) {
       <img src="${embedImage(r.dir, "female")}" alt="${r.female}">
       ${
         r.diverged
-          ? `<div class="warn">male/female の色が相違(色相差 ${Math.round(r.variantHueDiff)}° / 色差 ${Math.round(r.variantColorDiff)})</div>`
+          ? `<div class="warn">male/female で色が相違: ${
+              r.variantHueDiff >= DIVERGENCE_DEG
+                ? `色相が ${Math.round(r.variantHueDiff)}° 違う`
+                : "色相は一致するが明度/彩度が違う"
+            }(色差 ${Math.round(r.variantColorDiff)})。採用値は 2 枚をまとめた平均</div>`
           : ""
       }
       ${r.note ? `<div class="warn">${r.note}</div>` : ""}
@@ -662,7 +671,9 @@ function buildHtml(results, currentSeed) {
         白文字コントラスト ${r.contrast.toFixed(2)} ${r.contrast >= AA_RATIO ? "AA OK" : "NG"}
       </div>
       <div class="meta">primary 単体 ${r.primaryContrast.toFixed(2)}${
-        r.accentAdjusted ? " / accent は色相・彩度を保ち明度のみ調整" : " / 調整なし(primary と同値)"
+        r.accentAdjusted
+          ? " / accent は色相・彩度を保ち明度のみ調整"
+          : " / 調整なし(primary と同値)"
       }</div>
     </td>
     <td class="preview">
@@ -712,9 +723,11 @@ function buildHtml(results, currentSeed) {
 <body>
 <h1>キャラテーマカラー 抽出結果(P-A 確認用)</h1>
 <p class="lead">
-  各キャラの male / female 画像から識別色を抽出した結果です。primary は「そのキャラ固有の色相帯」の高彩度画素の平均、
-  accent は primary の<strong>色相・彩度を保ったまま明度だけを下げて</strong>白文字 WCAG AA(4.5)を満たすようにした値です。<br>
-  肌・線画・白背景は除外し、12 キャラ 24 枚の平均色相分布で割ることで全キャラ共通の肌/髪の茶を抑制しています。<br>
+  各キャラの male / female 画像(計 24 枚)から識別色を抽出した結果です。
+  primary は<strong>そのキャラの識別部位(髪・上着)の色相帯にある高彩度画素の平均</strong>、
+  accent は primary の<strong>色相・彩度を保ったまま明度だけを下げて</strong>白文字 WCAG AA(4.5)を満たすようにした値です
+  (色そのものは必ず画像の画素から算出しており、独自の色は使っていません)。<br>
+  白背景・線画・肌色は画素レベルで除外しています。<br>
   「現行(プレースホルダ)」と「新(抽出)」を並べています。承認する場合はそのままお伝えください。
 </p>
 <table>
