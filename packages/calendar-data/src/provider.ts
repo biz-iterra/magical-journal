@@ -7,10 +7,10 @@
  * 日盤は陽遁/陰遁サイクルで中宮星を算出(day-ban.ts)。
  */
 
-import type { Ban, CalendarProvider, SekkiriBoundary, StarNumber } from "@mj/engine";
+import type { Ban, CalendarProvider, SekkiriBoundary, StarNumber, TonpuMode } from "@mj/engine";
 import { buildBan } from "@mj/engine";
 
-import { getDayCenterStar } from "./day-ban.js";
+import { getDayCenterStar, getDayTonpuMode } from "./day-ban.js";
 import { getDayJunishi, getMonthJunishi, getYearJunishi } from "./junishi.js";
 import { SEKKI_DATA } from "./sekki-data.js";
 import { getMonthCenterStar, getYearCenterStar } from "./year-month-ban.js";
@@ -62,6 +62,15 @@ export class MasterCalendarProvider implements CalendarProvider {
 
   getDayJunishi(date: string): number {
     return getDayJunishi(date);
+  }
+
+  /**
+   * その日の遁(陽遁/陰遁)を返す。時盤の順行/逆行に使う。
+   * CalendarProvider インターフェースには含めない(既存実装への影響を避けるため、
+   * 具象クラスの公開ヘルパーとして提供する)。
+   */
+  getDayTonpuMode(date: string): TonpuMode {
+    return getDayTonpuMode(date);
   }
 
   // ── 気学上の年・月の解決(公開ヘルパー) ────────────────

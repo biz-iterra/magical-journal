@@ -115,6 +115,15 @@ export type ZodiacSign =
 /** ライフパス・ディスティニーの結果型 */
 export type NumerologyNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 11 | 22 | 33;
 
+// ── 遁(陽遁・陰遁) ──────────────────────────────────────
+
+/**
+ * 日盤の遁(とん)。時盤の順行/逆行を決めるのに使う。
+ * - youton(陽遁): 中宮星が進むごとに +1
+ * - inton(陰遁): 中宮星が進むごとに -1
+ */
+export type TonpuMode = "youton" | "inton";
+
 // ── CalendarProvider(DI 境界) ───────────────────────────
 
 export interface SekkiriBoundary {

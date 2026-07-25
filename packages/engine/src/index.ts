@@ -17,6 +17,7 @@ export type {
   NumerologyNumber,
   SekkiriBoundary,
   CalendarProvider,
+  TonpuMode,
 } from "./types.js";
 
 // config
@@ -47,6 +48,15 @@ export {
   kigakuProfileModule,
 } from "./kigaku/honmei.js";
 export { buildBan, getOppositeDirection, JYOUI_POSITIONS } from "./kigaku/ban.js";
+export {
+  computeDayHourBans,
+  computeHourBan,
+  computeHourCenterStar,
+  getHourPeriodByTime,
+  getHourPeriodIndex,
+  HOUR_PERIODS,
+} from "./kigaku/jiban.js";
+export type { HourBan, HourPeriod } from "./kigaku/jiban.js";
 export {
   judgeDirections,
   isShojo,

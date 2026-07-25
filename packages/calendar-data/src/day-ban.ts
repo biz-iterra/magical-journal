@@ -10,7 +10,7 @@
  * yakumoin.info 準拠で検証済み。
  */
 
-import type { StarNumber } from "@mj/engine";
+import type { StarNumber, TonpuMode } from "@mj/engine";
 
 // ── ユリウス日計算(junishi.ts と同方式) ─────────────────────
 
@@ -117,7 +117,11 @@ export function getTransitionDates(year: number): YoutonIntonTransition {
  * @param date "YYYY-MM-DD" 形式
  * @returns 中宮星番号(1=一白 〜 9=九紫)
  */
-export function getDayCenterStar(date: string): StarNumber {
+/**
+ * 指定日に効いている遁(陽遁/陰遁)の切替ポイントと、そこからの経過日数を返す。
+ * getDayCenterStar と getDayTonpuMode で共有する(判定の二重実装を作らない)。
+ */
+function getActiveTransition(date: string): { isYouton: boolean; daysSinceStart: number } {
   const [year, month, day] = parseDate(date);
   const dateJd = toJulianDay(year, month, day);
 
@@ -151,9 +155,23 @@ export function getDayCenterStar(date: string): StarNumber {
     throw new Error(`Cannot determine youton/inton for ${date}`);
   }
 
-  const daysSinceStart = dateJd - active.jd;
+  return { isYouton: active.isYouton, daysSinceStart: dateJd - active.jd };
+}
 
-  if (active.isYouton) {
+/**
+ * 日付からその日の遁(陽遁/陰遁)を返す。
+ * 時盤の順行/逆行の判定に使う(日盤の遁をそのまま用いる)。
+ *
+ * @param date "YYYY-MM-DD" 形式
+ */
+export function getDayTonpuMode(date: string): TonpuMode {
+  return getActiveTransition(date).isYouton ? "youton" : "inton";
+}
+
+export function getDayCenterStar(date: string): StarNumber {
+  const { isYouton, daysSinceStart } = getActiveTransition(date);
+
+  if (isYouton) {
     // 陽遁: day 0 → 一白(1), day 1 → 二黒(2), ..., day 8 → 九紫(9), day 9 → 一白(1)
     return ((daysSinceStart % 9) + 1) as StarNumber;
   }
