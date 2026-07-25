@@ -11,7 +11,10 @@
     "test": "pnpm -r run test",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "richmenu": "pnpm --filter @mj/batch richmenu",
+    "richmenu:dry": "pnpm --filter @mj/batch richmenu:dry",
+    "richmenu:list": "pnpm --filter @mj/batch richmenu:list"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",

@@ -13,7 +13,10 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "richmenu": "tsx src/richmenu/register.ts",
+    "richmenu:dry": "tsx src/richmenu/register.ts --dry-run",
+    "richmenu:list": "tsx src/richmenu/register.ts --list"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.5",
