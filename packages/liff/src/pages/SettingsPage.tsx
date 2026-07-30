@@ -3,6 +3,7 @@ import type { PotentialTypeId } from "@mj/engine";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
+import { PlaceSearchField } from "../components/PlaceSearchField";
 import { PostalCodeField } from "../components/PostalCodeField";
 import { clientError } from "../errors";
 import { geocodeAddress } from "../services/geocode";
@@ -111,6 +112,8 @@ export function SettingsPage() {
   const [newAddress, setNewAddress] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [addingPlace, setAddingPlace] = useState(false);
+  // マップ検索で選んだ場所の座標。あれば Geocoding をやり直さずそのまま使う
+  const [pickedLatLng, setPickedLatLng] = useState<{ lat: number; lng: number } | null>(null);
 
   const fetchProfile = useCallback(async () => {
     setLoading(true);
@@ -268,9 +271,10 @@ export function SettingsPage() {
     setError(null);
     try {
       // よく行く場所は方位計算に座標が必須なので、取れないときは登録しない。
+      // マップ検索で選んでいればその座標を使い、手入力なら住所から Geocoding する。
       // geocodeAddress は「該当なし/失敗」なら MJ-MAP-002 を throw し、
       // 「Maps キー未設定(開発時)」では null を返す。後者は別メッセージにする。
-      const latLng = await geocodeAddress(addressText);
+      const latLng = pickedLatLng ?? (await geocodeAddress(addressText));
       if (!latLng) {
         setError(clientError("MJ-MAP-001"));
         return;
@@ -287,12 +291,13 @@ export function SettingsPage() {
       setNewName("");
       setNewAddress("");
       setNewCategory("");
+      setPickedLatLng(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "場所の追加に失敗しました");
     } finally {
       setAddingPlace(false);
     }
-  }, [addingPlace, newName, newAddress, newCategory]);
+  }, [addingPlace, newName, newAddress, newCategory, pickedLatLng]);
 
   /** よく行く場所を削除する(更新 API は無いので、変更は削除→追加で行う) */
   const handleDeletePlace = useCallback(async (place: FavoritePlace) => {
@@ -590,6 +595,15 @@ export function SettingsPage() {
         )}
 
         <div className={s.placeForm}>
+          {/* Google マップのテキスト検索。選ぶと名前・住所・座標がまとめて入る。
+              Places が使えない構成では何も表示されず、下の手入力だけが残る */}
+          <PlaceSearchField
+            onSelect={(place) => {
+              setNewName(place.name);
+              setNewAddress(place.addressText);
+              setPickedLatLng({ lat: place.lat, lng: place.lng });
+            }}
+          />
           <input
             type="text"
             aria-label="場所の名前"
@@ -599,7 +613,13 @@ export function SettingsPage() {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
           />
-          <PostalCodeField onFound={(addr) => setNewAddress(addr)} />
+          <PostalCodeField
+            onFound={(addr) => {
+              setNewAddress(addr);
+              // 住所を選び直したので、検索で得た座標は無効にする
+              setPickedLatLng(null);
+            }}
+          />
           <input
             type="text"
             aria-label="場所の住所"
