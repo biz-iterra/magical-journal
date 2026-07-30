@@ -12,10 +12,18 @@ process.env.NODE_ENV = "development";
 process.env.DATABASE_PATH = ":memory:";
 process.env.LLM_PROVIDER = "mock";
 
+import { MasterCalendarProvider } from "@mj/calendar-data";
 import app from "../../app.js";
 import { initMemoryDb } from "../../db/connection.js";
-import { createProfile, createUser, getDailyFortune, saveDailyFortune } from "../../db/queries.js";
+import {
+  createProfile,
+  createUser,
+  getDailyFortune,
+  getMonthlyFortune,
+  saveDailyFortune,
+} from "../../db/queries.js";
 import { initDb } from "../../db/schema.js";
+import { generateAndSaveMonthly } from "../../services/monthly.js";
 
 const LINE_ID = "U-today";
 
@@ -48,6 +56,11 @@ interface TodayResponse {
     text: string | null;
     sections: { fortune: string; schedule: string; characterNote: string } | null;
   } | null;
+  readonly monthly: {
+    kigakuYear: number;
+    kigakuMonth: number;
+    text: string | null;
+  };
 }
 
 describe("GET /api/today 遅延生成", () => {
@@ -97,5 +110,62 @@ describe("GET /api/today 遅延生成", () => {
     // 生成で上書きされず、保存済みの値が返る(mock の「【モック運勢】…」ではない)
     expect(body.fortune?.sections?.fortune).toBe(marker.fortune);
     expect(body.fortune?.sections?.characterNote).toBe(marker.characterNote);
+  });
+});
+
+/**
+ * 月運の集約(v0.6: 月間ページ廃止 → 今日のジャーナルへ)。
+ * 未生成なら text=null を返し、裏で fire-and-forget 生成が始まる。
+ * 生成済みなら保存済みテキストを返す。
+ */
+describe("GET /api/today の月運集約", () => {
+  beforeEach(() => {
+    const db = initMemoryDb();
+    initDb(db);
+  });
+
+  it("未生成: monthly.text は null で返り、気学年・気学月は常に付く", async () => {
+    seedUser();
+
+    const res = await getToday();
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as TodayResponse;
+
+    expect(body.monthly.text).toBeNull();
+    // 節入り基準の気学年・気学月(決定的ロジック)は必ず返る
+    expect(body.monthly.kigakuYear).toBeGreaterThan(2000);
+    expect(body.monthly.kigakuMonth).toBeGreaterThanOrEqual(1);
+    expect(body.monthly.kigakuMonth).toBeLessThanOrEqual(12);
+  });
+
+  it("生成済み: 保存済みの月運テキストを返す(気学年・気学月キー)", async () => {
+    const userId = seedUser();
+    const calendar = new MasterCalendarProvider();
+    const dateStr = todayJST();
+
+    // 非同期生成と同じ経路で生成・保存する(await して決定的にする)
+    await generateAndSaveMonthly(
+      {
+        userId,
+        birthDate: "1990-05-17",
+        birthTime: null,
+        charStyle: "male",
+        lat: null,
+        lng: null,
+      },
+      dateStr,
+      calendar,
+    );
+
+    const kigakuYear = calendar.getKigakuYear(dateStr);
+    const kigakuMonth = calendar.getKigakuMonth(dateStr);
+    const saved = getMonthlyFortune(userId, kigakuYear, kigakuMonth);
+    expect(saved?.fortune_text).toBeTruthy();
+
+    const res = await getToday();
+    const body = (await res.json()) as TodayResponse;
+    expect(body.monthly.kigakuYear).toBe(kigakuYear);
+    expect(body.monthly.kigakuMonth).toBe(kigakuMonth);
+    expect(body.monthly.text).toBe(saved?.fortune_text);
   });
 });

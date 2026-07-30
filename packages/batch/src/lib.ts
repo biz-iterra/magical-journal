@@ -17,6 +17,9 @@ export type { DailySections } from "./daily/sections.js";
 export { generatePersonalityForUser } from "./personality/run.js";
 export type { GeneratePersonalityDeps } from "./personality/run.js";
 export type { PersonalityReport, PersonalityItems } from "./personality/report.js";
+export { generateMonthlyForUser } from "./monthly/run.js";
+export type { GenerateMonthlyDeps } from "./monthly/run.js";
+export type { MonthlyStructured, MonthlyCalendarProvider } from "./monthly/structured.js";
 
 // ── プロバイダファクトリ・設定(遅延構築用) ────────────────────────
 export { createLlmProvider } from "./llm/factory.js";

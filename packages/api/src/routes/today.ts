@@ -1,23 +1,35 @@
 /**
  * GET /api/today
  *
- * 今日の日盤 + 方位判定 + 時盤(12刻) + daily_fortunes を返す。
+ * 今日の日盤 + 方位判定 + 時盤(12刻) + daily_fortunes + 今月の月運を返す。
  * 方位判定は engine を直接呼ぶ(保存済みのバッチ結果ではなくリアルタイム計算)。
  *
  * 文章(3セクション)は未生成なら初回アクセス時に同期生成してキャッシュする
  * (CLAUDE.md ルール6: リクエストトリガー生成 + 保険の夜間バッチ)。バッチが先に
  * 生成済みならキャッシュヒットで LLM を呼ばない。生成失敗は握りつぶさずログに残し、
  * 決定的な方位計算は必ず返して fortune=null(または既存行)で続行する。
+ *
+ * 月運(v0.6 で月間ページから集約)は未生成なら fire-and-forget で生成を開始し、
+ * その回は monthly.text=null で返す(次回アクセスで表示)。1リクエストで LLM を
+ * 2回叩いて待たせないため。月運は月1回しか変わらないので非同期で十分。
  */
 
-import { generateDailyForUser } from "@mj/batch";
+import { generateDailyForUser, generateMonthlyForUser } from "@mj/batch";
 import { MasterCalendarProvider } from "@mj/calendar-data";
 import { computeGetsumeiStar, computeHonmeiStar, judgeDirections } from "@mj/engine";
 import { Hono } from "hono";
-import { getDailyFortune, getProfile, getUserByLineId, saveDailyFortune } from "../db/queries.js";
+import {
+  getDailyFortune,
+  getMonthlyFortune,
+  getProfile,
+  getUserByLineId,
+  saveDailyFortune,
+  saveMonthlyFortune,
+} from "../db/queries.js";
 import { fail } from "../errors.js";
 import { buildGenerationProviders } from "../services/generation.js";
 import { buildHourlyDirections } from "../services/hourly.js";
+import { generateAndSaveMonthly } from "../services/monthly.js";
 import type { AppEnv } from "../types.js";
 
 const today = new Hono<AppEnv>();
@@ -108,6 +120,24 @@ today.get("/", async (c) => {
     }
   }
 
+  // 月運(v0.6: 月間ページから集約)。保存キーは節入り基準の気学年・気学月。
+  // 未生成なら fire-and-forget で生成を開始し、この回は text=null で返す
+  // (次回アクセスで表示される。保険の月次バッチでも生成される)。
+  const monthlyRow = getMonthlyFortune(user.id, kigakuYear, kigakuMonth);
+  if (!monthlyRow?.fortune_text) {
+    const activeUser = {
+      userId: user.id,
+      birthDate: prof.birth_date,
+      birthTime: prof.birth_time,
+      charStyle: prof.char_style,
+      lat: prof.lat,
+      lng: prof.lng,
+    };
+    // generateAndSaveMonthly は throw しない(内部で失敗をログ化)。応答はブロックしない。
+    // 同時アクセスの二重生成は upsert で安全に上書きされる(低トラフィックで許容)。
+    void generateAndSaveMonthly(activeUser, dateStr, calendar);
+  }
+
   // 3セクション {fortune, schedule, characterNote}(バッチが sections_json に保存)。
   // 旧行(sections_json 未生成)や壊れた JSON の場合は fortune_text を運勢へフォールバック。
   let sections: { fortune: string; schedule: string; characterNote: string } | null = null;
@@ -158,6 +188,12 @@ today.get("/", async (c) => {
             : null,
         }
       : null,
+    // 今月の月運(v0.6 で月間ページから集約)。未生成なら text=null(裏で生成が始まる)。
+    monthly: {
+      kigakuYear,
+      kigakuMonth,
+      text: monthlyRow?.fortune_text ?? null,
+    },
   });
 });
 

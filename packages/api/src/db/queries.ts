@@ -272,3 +272,27 @@ export function getMonthlyFortune(
   );
   return stmt.get(userId, kigakuYear, kigakuMonth) as MonthlyFortuneRow | undefined;
 }
+
+/**
+ * 月次運勢を upsert する(UNIQUE(user_id, kigaku_year, kigaku_month))。
+ * キーは節入り基準の気学年・気学月。batch/db/queries.ts の saveMonthlyFortune と同一挙動。
+ * GET /api/today の非同期生成と月次バッチのどちらから書いても同じ行になる。
+ */
+export function saveMonthlyFortune(
+  userId: number,
+  kigakuYear: number,
+  kigakuMonth: number,
+  directionsJson: string | null,
+  fortuneText: string | null,
+): void {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO monthly_fortunes (user_id, kigaku_year, kigaku_month, directions_json, fortune_text)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(user_id, kigaku_year, kigaku_month) DO UPDATE SET
+      directions_json = excluded.directions_json,
+      fortune_text = excluded.fortune_text,
+      created_at = datetime('now')
+  `);
+  stmt.run(userId, kigakuYear, kigakuMonth, directionsJson, fortuneText);
+}

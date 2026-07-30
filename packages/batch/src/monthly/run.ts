@@ -5,9 +5,13 @@
  *   2. アクティブユーザーを取得
  *   3. ユーザーごとに:
  *      - 既に当該気学月の行があればスキップ(冪等性。日1回動かしても LLM を無駄に呼ばない)
- *      - 無ければ今月の構造化データを算出(engine + 暦マスタ = 決定的)
- *      - 構造化データ + タイプ×char_style のトーンをプロンプトに注入し LLM で文章生成
+ *      - 無ければ generateMonthlyForUser で生成
+ *        (今月の構造化データを算出(engine + 暦マスタ = 決定的)→
+ *         構造化データ + タイプ×char_style のトーンをプロンプトに注入し LLM で文章生成)
  *      - monthly_fortunes に upsert(directions_json も保存)
+ *
+ * generateMonthlyForUser(1 ユーザー分・DB 非依存)は API 側の
+ * GET /api/today でも使う(月運の非同期生成)。ロジックの重複を作らない。
  *
  * 気学月をキーにすることで、月次 cron を月1回で回しても、日次で回しても、
  * 節入り遷移をまたいだ最初の実行で自動的に新しい気学月ぶんを生成できる。
@@ -21,7 +25,7 @@ import { getPersona } from "../data/personas.js";
 import type { LlmProvider } from "../llm/provider.js";
 import { buildMonthlyPrompt } from "./prompt.js";
 import { buildMonthlyStructured } from "./structured.js";
-import type { MonthlyCalendarProvider } from "./structured.js";
+import type { MonthlyCalendarProvider, MonthlyStructured } from "./structured.js";
 
 /**
  * バッチ処理対象ユーザー(方位・運勢の算出に必要な最小項目のみ)。
@@ -87,6 +91,58 @@ function toCharStyle(raw: string): CharStyle | undefined {
 }
 
 /**
+ * 1 ユーザー分の月運生成に必要な依存。
+ * DB は含めない(構造化データと文章を返すだけで、保存は呼び出し側の責務)。
+ * runMonthlyBatch と API(/api/today の月運の非同期生成)の両方から使う共有ロジック。
+ */
+export interface GenerateMonthlyDeps {
+  readonly provider: LlmProvider;
+  readonly calendar: MonthlyCalendarProvider;
+  readonly logger?: Logger;
+}
+
+/**
+ * 1 ユーザー分の今月データ(構造化データ + 月運文章)を生成する。
+ *
+ *   1. 構造化データ(決定的: engine + 暦マスタ。気学年・気学月は節入り基準)
+ *   2. トーン注入 + LLM 生成(プレーンテキストの月運文)
+ *
+ * ★DB 保存はしない(呼び出し側が saveFortune 相当で保存する)。
+ * ★冪等スキップ判定(既存行チェック)もしない。それは呼び出し側の責務。
+ * 構造化データ算出の失敗(暦マスタ範囲外など)・LLM の失敗は throw する
+ * (呼び出し側でスキップ/グレースフル判断)。
+ *
+ * fortuneText は空文字になりうる(プロバイダが空を返した場合)。保存側は
+ * `fortuneText || null` で正規化する。
+ */
+export async function generateMonthlyForUser(
+  user: ActiveUser,
+  date: string,
+  deps: GenerateMonthlyDeps,
+): Promise<{ structured: MonthlyStructured; fortuneText: string }> {
+  const logger = deps.logger ?? defaultLogger;
+
+  // 1. 構造化データ(決定的)
+  const structured = buildMonthlyStructured(
+    { birthDate: user.birthDate, birthTime: user.birthTime, date },
+    deps.calendar,
+  );
+
+  // 2. トーン注入 + LLM 生成
+  const style = toCharStyle(user.charStyle);
+  const persona = style ? getPersona(structured.potentialType, style) : undefined;
+  const prompt = buildMonthlyPrompt(structured, persona);
+  const fortuneText = await deps.provider.generate(prompt);
+
+  if (!fortuneText) {
+    // 機能は止めない(空でも構造化データは返す)が、握りつぶさず記録に残す
+    logger.error(`[monthly] user_id=${String(user.userId)} 月運の生成結果が空文字`);
+  }
+
+  return { structured, fortuneText };
+}
+
+/**
  * 指定日を含む気学月の月次運勢バッチを実行する(1 回実行)。
  * @param date 対象日付 "YYYY-MM-DD"(JST)。ここから気学年・気学月を求める
  */
@@ -119,17 +175,12 @@ export async function runMonthlyBatch(
         continue;
       }
 
-      // 構造化データ(決定的)
-      const structured = buildMonthlyStructured(
-        { birthDate: user.birthDate, birthTime: user.birthTime, date },
+      // 1 ユーザー分の生成(構造化データ + 月運文章)。API と共有する純関数。
+      const { structured, fortuneText } = await generateMonthlyForUser(user, date, {
+        provider: deps.provider,
         calendar,
-      );
-
-      // トーン注入 + LLM 生成
-      const style = toCharStyle(user.charStyle);
-      const persona = style ? getPersona(structured.potentialType, style) : undefined;
-      const prompt = buildMonthlyPrompt(structured, persona);
-      const fortuneText = await deps.provider.generate(prompt);
+        logger,
+      });
 
       // 保存(directions_json も)
       saveFortune(
@@ -137,7 +188,7 @@ export async function runMonthlyBatch(
         structured.kigakuYear,
         structured.kigakuMonth,
         JSON.stringify(structured),
-        fortuneText,
+        fortuneText || null,
       );
       succeeded += 1;
     } catch (err) {
