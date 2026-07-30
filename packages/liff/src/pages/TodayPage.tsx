@@ -72,6 +72,17 @@ interface TodayResponse {
     } | null;
     directionsJson: unknown;
   } | null;
+  /**
+   * 今月の月運(v0.6 で月間ページから集約)。オブジェクト自体は必ず返る。
+   * text が null のときはサーバーが裏で生成を開始しており、次回アクセスで表示される。
+   * 旧 API と繋がった場合は undefined。
+   */
+  monthly?: {
+    kigakuYear: number;
+    /** 気学月(節入り基準)。カレンダー月とはずれる */
+    kigakuMonth: number;
+    text: string | null;
+  };
 }
 
 // ── ヘルパー ──────────────────────────────────────────────
@@ -267,6 +278,32 @@ export function TodayPage() {
           <div className={s.fortuneSectionTitle}>今日のスケジュール</div>
           <ScheduleList schedule={sections.schedule} />
         </div>
+      )}
+
+      {/* 5. 今月の運勢(v0.6 で月間ページから集約。今日の話の後に置く) */}
+      {data.monthly && <MonthlyFortune monthly={data.monthly} />}
+    </div>
+  );
+}
+
+// ── 今月の運勢(月間ページから集約) ──────────────────────
+
+/**
+ * 今月の月運を表示する。
+ * text が null のときはサーバーが裏で生成を開始しているので、次回アクセスで出る旨を案内する。
+ */
+function MonthlyFortune({ monthly }: { monthly: NonNullable<TodayResponse["monthly"]> }) {
+  return (
+    <div className={s.fortuneCard}>
+      <div className={s.fortuneSectionTitle}>今月の運勢</div>
+      {/* 気学月は節入り基準でカレンダー月とずれるため、その旨が伝わる表記にする */}
+      <div className={s.monthlyMeta}>{monthly.kigakuMonth}月（気学の月）</div>
+      {monthly.text ? (
+        <p className={s.fortuneText}>{monthly.text}</p>
+      ) : (
+        <p className={s.fortuneEmpty}>
+          今月の運勢は準備中です。しばらくしてから開き直すと表示されます。
+        </p>
       )}
     </div>
   );

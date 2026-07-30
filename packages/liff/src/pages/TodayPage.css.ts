@@ -107,6 +107,13 @@ export const fortuneEmpty = style({
   padding: "12px 0",
 });
 
+// 今月の運勢の補足(気学月は節入り基準でカレンダー月とずれるため明示する)
+export const monthlyMeta = style({
+  fontSize: "11px",
+  color: vars.color.textMuted,
+  marginBottom: "6px",
+});
+
 // ── 運勢3セクション(運勢 / スケジュール / キャラの一言) ─────
 // 1枚のカード内に3セクションを縦積みし、セクション間は極薄の仕切りで区切る。
 
@@ -159,37 +166,8 @@ export const scheduleLine = style({
 });
 
 // ── 九星情報 ──────────────────────────────────────────────
-// TodayPage 本体では未使用(本命星・月命星は MyTypePage に集約)。
-// MonthlyPage.css が再利用するため定義は残す。
-
-export const starRow = style({
-  display: "flex",
-  gap: "10px",
-  marginBottom: "12px",
-});
-
-export const starChip = style({
-  flex: 1,
-  backgroundColor: vars.color.surface,
-  borderRadius: "10px",
-  padding: "12px 14px",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-});
-
-export const starChipLabel = style({
-  fontSize: "10px",
-  fontWeight: 600,
-  color: vars.color.textFaint,
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.06em",
-  marginBottom: "4px",
-});
-
-export const starChipValue = style({
-  fontSize: "16px",
-  fontWeight: 600,
-  color: vars.color.text,
-});
+// 本命星・月命星のチップは削除した。表示は MyTypePage に集約しており、
+// 唯一の再利用元だった MonthlyPage も今日のジャーナルへ集約して廃止したため(v0.6)。
 
 // ── 方位セクション ───────────────────────────────────────
 // 方位盤(羅針盤)の見た目とセル配色は components/direction-compass に集約した

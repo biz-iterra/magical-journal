@@ -1,9 +1,8 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { CharacterThemeProvider } from "./components/CharacterTheme";
 import { Layout } from "./components/Layout";
 import { useLiff } from "./hooks/useLiff";
 import { FriendDiagPage } from "./pages/FriendDiagPage";
-import { MonthlyPage } from "./pages/MonthlyPage";
 import { MyTypePage } from "./pages/MyTypePage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -58,7 +57,12 @@ export function App() {
                 <Route path="/" element={<TodayPage />} />
                 <Route path="/mytype" element={<MyTypePage />} />
                 <Route path="/friend" element={<FriendDiagPage />} />
-                <Route path="/monthly" element={<MonthlyPage />} />
+                {/*
+                  v0.6: 月間ページは今日のジャーナルへ集約した。
+                  ルート自体は残してリダイレクトする(古いリッチメニューや
+                  ブックマークが /monthly を指している端末でリンク切れにしないため)。
+                */}
+                <Route path="/monthly" element={<Navigate to="/" replace />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Routes>
             </Layout>

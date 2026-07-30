@@ -13,7 +13,7 @@ const navItems = [
   { to: "/", label: "今日" },
   { to: "/mytype", label: "タイプ" },
   { to: "/friend", label: "友達" },
-  { to: "/monthly", label: "月間" },
+  // v0.6: 月間運勢は今日のジャーナルへ集約したためナビから外した
   { to: "/settings", label: "設定" },
 ] as const;
 
