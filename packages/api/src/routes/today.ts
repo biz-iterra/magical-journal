@@ -30,6 +30,7 @@ import { fail } from "../errors.js";
 import { buildGenerationProviders } from "../services/generation.js";
 import { buildHourlyDirections } from "../services/hourly.js";
 import { generateAndSaveMonthly } from "../services/monthly.js";
+import { loadJournalSettings } from "../services/preferences.js";
 import type { AppEnv } from "../types.js";
 
 const today = new Hono<AppEnv>();
@@ -102,6 +103,9 @@ today.get("/", async (c) => {
         places,
         placesOffsetKm: config.placesOffsetKm,
         placesRadiusMeters: config.placesRadiusMeters,
+        // ユーザー設定(よく行く場所・活動時間帯・移動手段・休日曜日)。
+        // 未設定なら EMPTY 相当が返り、従来の既定挙動になる。
+        settings: loadJournalSettings(user.id),
       });
       // upsert(ON CONFLICT で安全に上書き。同時アクセスの二重生成は低トラフィックで許容)
       saveDailyFortune(

@@ -36,6 +36,15 @@ export const API_ERRORS = {
   "MJ-PROF-001": { status: 400, message: "表示スタイルの指定が不正です" },
   "MJ-PROF-002": { status: 400, message: "出生時刻の形式が不正です" },
 
+  // ── ジャーナル設定・お気に入り地点 ──────────────────────
+  "MJ-PREF-001": { status: 400, message: "活動時間帯の形式が不正です" },
+  "MJ-PREF-002": { status: 400, message: "移動手段の指定が不正です" },
+  "MJ-PREF-003": { status: 400, message: "休日にする曜日の指定が不正です" },
+  "MJ-PREF-004": { status: 400, message: "場所の名前と住所を入力してください" },
+  "MJ-PREF-005": { status: 400, message: "場所の位置情報が不正です" },
+  "MJ-PREF-404": { status: 404, message: "指定された場所が見つかりませんでした" },
+  "MJ-PREF-409": { status: 409, message: "よく行く場所の登録上限に達しました" },
+
   // ── 性質レポート ────────────────────────────────────────
   "MJ-PERS-429": { status: 429, message: "本日の再生成の上限に達しました" },
 

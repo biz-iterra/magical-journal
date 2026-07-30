@@ -181,13 +181,15 @@ export function buildRichMenu(input: BuildRichMenuInput): RichMenuObject {
       bounds: cell(0, 1),
       action: { type: "message", label: "マイタイプ", text: MESSAGE_TEXT_MYTYPE },
     },
-    // ⑤ 月間運勢(中央下) — LIFF 起動(月間ページ)
+    // ⑤ 月間運勢(中央下) — LIFF 起動。
+    // v0.6: 月間ページは今日のジャーナルへ集約したため、リンク先は today。
+    // (画像には「MONTHLY 月間運勢」と入っているのでラベルは据え置き。画像差し替え時に見直す)
     {
       bounds: cell(1, 1),
       action: {
         type: "uri",
         label: "月間運勢",
-        uri: liffUri(liffId, LIFF_PATHS.monthly),
+        uri: liffUri(liffId, LIFF_PATHS.today),
       },
     },
     // ⑥ 設定(右下) — LIFF 起動(設定ページ)

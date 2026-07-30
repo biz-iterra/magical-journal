@@ -20,6 +20,14 @@ import type { LlmProvider } from "../llm/provider.js";
 import { bearingOf, offsetPoint } from "../places/geo.js";
 import type { PlacesProvider } from "../places/provider.js";
 import { NullPlacesProvider } from "../places/provider.js";
+import { matchFavoritePlaces } from "./favorites.js";
+import type { PlacesDistance, UserJournalSettings } from "./preferences.js";
+import {
+  EMPTY_JOURNAL_SETTINGS,
+  FAVORITE_PLACES_IN_PROMPT,
+  resolvePlacesDistance,
+  resolveSchedulePreferences,
+} from "./preferences.js";
 import { type ScheduleMaterial, buildDailyPrompt } from "./prompt.js";
 import type { DailySections } from "./sections.js";
 import { parseDailySections } from "./sections.js";
@@ -62,6 +70,12 @@ export interface RunDailyDeps {
   readonly placesRadiusMeters?: number;
   /** ユーザー取得(index.ts が DB 実装を注入。テストはフェイクを注入) */
   readonly getUsers: () => ActiveUser[];
+  /**
+   * ユーザーの「今日のジャーナル」設定取得(index.ts が DB 実装を注入)。
+   * 未指定なら設定なし扱い = 従来の既定挙動。取得に失敗したユーザーは設定なしで続行する
+   * (設定の取得失敗で運勢生成を止めない)。
+   */
+  readonly getSettings?: (userId: number) => UserJournalSettings;
   /** 保存(index.ts が DB 実装を注入。テストはフェイクを注入) */
   readonly saveFortune: (
     userId: number,
@@ -99,33 +113,52 @@ function pickPrimaryGood(
 }
 
 /**
- * 吉方位方向の実在スポットを取得してスケジュール材料を返す。
- * 座標なし/吉方位なし/Places 失敗のいずれでも一般提案(method="general")へフォールバックする。
+ * スケジュールの行先を決める(3段フォールバック。確定仕様の優先順)。
+ *
+ *   ① favorite: ユーザー登録の「よく行く場所」のうち、自宅から見た方位が当日の吉方位に
+ *               合致するもの(方位はコード算出 = 決定的)。合致があれば最優先で採用する。
+ *   ② places:   ①が無ければ、従来どおり吉方位方向へオフセットした点の周辺を Places で検索。
+ *   ③ general:  ②も取れなければ方角ベースの一般提案(実在店名なし)。
+ *
+ * 座標なし/吉方位なし/Places 失敗のいずれでも ③ へフォールバックする。
  * ★ここでの失敗はユーザーをスキップしない(機能を止めない)。
  */
 async function buildScheduleMaterial(
   user: ActiveUser,
   structured: DailyStructured,
+  settings: UserJournalSettings,
   places: PlacesProvider,
-  offsetKm: number,
-  radiusMeters: number,
+  distance: PlacesDistance,
   logger: Logger,
 ): Promise<ScheduleMaterial> {
   if (user.lat == null || user.lng == null) {
     return { places: [], method: "general" };
   }
+  const home = { lat: user.lat, lng: user.lng };
+
+  // ① 登録地点のうち吉方位に合致するもの(最優先)。方位判定は決定的ロジック。
+  const matched = matchFavoritePlaces(home, settings.favoritePlaces, structured.goodDirections);
+  if (matched.length > 0) {
+    return {
+      // 名前とカテゴリのみをプロンプトへ渡す(住所・座標は渡さない)
+      places: matched.slice(0, FAVORITE_PLACES_IN_PROMPT).map((m) => ({
+        name: m.place.name,
+        category: m.place.category ?? undefined,
+      })),
+      method: "favorite",
+    };
+  }
+
+  // ② Places で吉方位方向の実在スポットを検索(従来どおり)
   const good = pickPrimaryGood(structured);
   if (!good) {
     return { places: [], method: "general" };
   }
   try {
-    const point = offsetPoint(
-      { lat: user.lat, lng: user.lng },
-      bearingOf(good.direction),
-      offsetKm,
-    );
-    const results = await places.findNearby({ point, radiusMeters });
+    const point = offsetPoint(home, bearingOf(good.direction), distance.offsetKm);
+    const results = await places.findNearby({ point, radiusMeters: distance.radiusMeters });
     if (results.length === 0) {
+      // ③ 一般提案
       return { places: [], method: "general" };
     }
     return { places: results, method: "places" };
@@ -151,6 +184,11 @@ export interface GenerateDailyDeps {
   readonly placesOffsetKm?: number;
   /** オフセット点周辺の検索半径(m)。未指定なら 1500m */
   readonly placesRadiusMeters?: number;
+  /**
+   * ユーザーの「今日のジャーナル」設定(お気に入り地点・活動時間帯・移動手段・休日曜日)。
+   * 未指定なら設定なし扱いで従来の既定挙動になる(後方互換)。
+   */
+  readonly settings?: UserJournalSettings;
   readonly logger?: Logger;
 }
 
@@ -172,8 +210,13 @@ export async function generateDailyForUser(
 ): Promise<{ structured: DailyStructured; sections: DailySections; parsed: boolean }> {
   const logger = deps.logger ?? defaultLogger;
   const places = deps.places ?? new NullPlacesProvider();
-  const offsetKm = deps.placesOffsetKm ?? 3;
-  const radiusMeters = deps.placesRadiusMeters ?? 1500;
+  const settings = deps.settings ?? EMPTY_JOURNAL_SETTINGS;
+
+  // 距離パラメータ: ユーザーの移動手段設定を優先し、無ければ env 既定へフォールバック
+  const distance = resolvePlacesDistance(settings.preferences, {
+    offsetKm: deps.placesOffsetKm ?? 3,
+    radiusMeters: deps.placesRadiusMeters ?? 1500,
+  });
 
   // 2. 構造化データ(決定的)
   const structured = buildDailyStructured(
@@ -181,20 +224,21 @@ export async function generateDailyForUser(
     deps.calendar,
   );
 
-  // 3. スケジュール材料(実在スポット or 一般提案。失敗してもスキップしない)
+  // 3. スケジュール材料(登録地点 → Places → 一般提案の3段。失敗してもスキップしない)
   const material = await buildScheduleMaterial(
     user,
     structured,
+    settings,
     places,
-    offsetKm,
-    radiusMeters,
+    distance,
     logger,
   );
 
-  // 4. トーン注入 + LLM 生成(3セクション JSON)→ パース
+  // 4. トーン注入 + ユーザー設定 + LLM 生成(3セクション JSON)→ パース
   const style = toCharStyle(user.charStyle);
   const persona = style ? getPersona(structured.potentialType, style) : undefined;
-  const prompt = buildDailyPrompt(structured, persona, material);
+  const prefs = resolveSchedulePreferences(date, settings.preferences);
+  const prompt = buildDailyPrompt(structured, persona, material, prefs);
   const raw = await deps.provider.generate(prompt);
   const { sections, parsed } = parseDailySections(raw);
   if (!parsed) {
@@ -226,6 +270,20 @@ export async function runDailyBatch(date: string, deps: RunDailyDeps): Promise<R
 
   for (const user of users) {
     try {
+      // ユーザー設定(お気に入り地点・活動時間帯・移動手段・休日曜日)。
+      // 取得失敗は握りつぶさずログに残し、設定なしで生成を続行する(運勢を止めない)。
+      let settings: UserJournalSettings | undefined;
+      if (deps.getSettings) {
+        try {
+          settings = deps.getSettings(user.userId);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          logger.error(
+            `[daily] user_id=${String(user.userId)} 設定取得に失敗(既定挙動で続行): ${message}`,
+          );
+        }
+      }
+
       // 1 ユーザー分の生成(構造化データ + 3セクション)。API と共有する純関数。
       const { structured, sections } = await generateDailyForUser(user, date, {
         provider: deps.provider,
@@ -233,6 +291,7 @@ export async function runDailyBatch(date: string, deps: RunDailyDeps): Promise<R
         places,
         placesOffsetKm: deps.placesOffsetKm,
         placesRadiusMeters: deps.placesRadiusMeters,
+        settings,
         logger,
       });
 

@@ -31,6 +31,38 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 「今日のジャーナル」設定(1 ユーザー 1 行。行が無い = すべて未設定)
+-- 診断には一切影響しない生成の嗜好なので profiles(診断入力)とは分離する。
+-- 全項目 NULL 許容: 未設定でもスケジュール生成が壊れないこと(既定挙動へフォールバック)。
+--   wake_time / sleep_time  : "HH:MM"。スケジュールのタイムラインをこの範囲に収める
+--   transport_mode          : 'walk'|'bike'|'train'|'car'。Places の距離パラメータに反映
+--   holiday_weekdays        : 休日にする曜日の JSON 配列 "[0,6]"(0=日 … 6=土)。NULL=既定の土日
+CREATE TABLE IF NOT EXISTS user_preferences (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id),
+  wake_time TEXT,
+  sleep_time TEXT,
+  transport_mode TEXT,
+  holiday_weekdays TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- よく行く場所(お気に入り地点。1 ユーザー複数行・サーバー側上限 10 件)
+-- 座標はフロントが Geocoding で取得して送る(サーバーでは Geocoding しない)。
+-- 本人の行き先のみを登録する(第三者情報は扱わない)。
+CREATE TABLE IF NOT EXISTS favorite_places (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  name TEXT NOT NULL,
+  category TEXT,
+  address_text TEXT NOT NULL,
+  lat REAL NOT NULL,
+  lng REAL NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_favorite_places_user_id ON favorite_places(user_id);
+
 -- 診断結果(モジュール汎用スキーマ)
 CREATE TABLE IF NOT EXISTS diag_results (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -137,6 +169,16 @@ function migrate(db: Database.Database): void {
   // daily_fortunes.sections_json(3セクション {fortune, schedule, characterNote})
   if (!hasColumn(db, "daily_fortunes", "sections_json")) {
     db.exec("ALTER TABLE daily_fortunes ADD COLUMN sections_json TEXT");
+  }
+
+  // user_preferences の追加列(将来の設定項目もここに冪等追記する)。
+  // ★user_preferences 自体は CREATE TABLE IF NOT EXISTS で作られるため、
+  //   既存 DB でも上の CREATE_TABLES 実行時に新規作成される(ALTER は不要)。
+  //   既に user_preferences を持つ DB に列を足すときのみ、以下の形で追記する。
+  for (const column of ["wake_time", "sleep_time", "transport_mode", "holiday_weekdays"] as const) {
+    if (!hasColumn(db, "user_preferences", column)) {
+      db.exec(`ALTER TABLE user_preferences ADD COLUMN ${column} TEXT`);
+    }
   }
 }
 

@@ -6,9 +6,11 @@
 import type {
   DailyFortuneRow,
   DiagResultRow,
+  FavoritePlaceRow,
   MonthlyFortuneRow,
   PersonalityReportRow,
   ProfileRow,
+  UserPreferencesRow,
   UserRow,
 } from "../types.js";
 import { getDb } from "./connection.js";
@@ -136,6 +138,133 @@ export function updateProfile(userId: number, data: UpdateProfileData): ProfileR
   db.prepare(sql).run(...values);
 
   return getProfile(userId);
+}
+
+// ── user_preferences(「今日のジャーナル」設定) ───────────────
+
+/**
+ * 設定行を返す。未設定(行なし)なら undefined。
+ * 呼び出し側は undefined を「すべて未設定 = 既定挙動」として扱う。
+ */
+export function getUserPreferences(userId: number): UserPreferencesRow | undefined {
+  const db = getDb();
+  return db.prepare("SELECT * FROM user_preferences WHERE user_id = ?").get(userId) as
+    | UserPreferencesRow
+    | undefined;
+}
+
+/**
+ * 設定の部分更新(upsert)。undefined のキーは変更せず、null は未設定へ戻す。
+ * 行が無ければ作ってから更新する(初回設定)。
+ */
+export interface UpdateUserPreferencesData {
+  /** "HH:MM" / null=未設定へ戻す / undefined=変更しない */
+  readonly wakeTime?: string | null;
+  readonly sleepTime?: string | null;
+  readonly transportMode?: string | null;
+  /** 休日にする曜日の JSON 文字列 "[0,6]" / null=未設定へ戻す / undefined=変更しない */
+  readonly holidayWeekdaysJson?: string | null;
+}
+
+export function upsertUserPreferences(
+  userId: number,
+  data: UpdateUserPreferencesData,
+): UserPreferencesRow {
+  const db = getDb();
+
+  // 行を確保(既存があれば何もしない)
+  db.prepare(
+    "INSERT INTO user_preferences (user_id) VALUES (?) ON CONFLICT(user_id) DO NOTHING",
+  ).run(userId);
+
+  const sets: string[] = [];
+  const values: unknown[] = [];
+  if (data.wakeTime !== undefined) {
+    sets.push("wake_time = ?");
+    values.push(data.wakeTime);
+  }
+  if (data.sleepTime !== undefined) {
+    sets.push("sleep_time = ?");
+    values.push(data.sleepTime);
+  }
+  if (data.transportMode !== undefined) {
+    sets.push("transport_mode = ?");
+    values.push(data.transportMode);
+  }
+  if (data.holidayWeekdaysJson !== undefined) {
+    sets.push("holiday_weekdays = ?");
+    values.push(data.holidayWeekdaysJson);
+  }
+
+  if (sets.length > 0) {
+    sets.push("updated_at = datetime('now')");
+    values.push(userId);
+    db.prepare(`UPDATE user_preferences SET ${sets.join(", ")} WHERE user_id = ?`).run(...values);
+  }
+
+  const row = getUserPreferences(userId);
+  if (!row) {
+    throw new Error("Failed to upsert user_preferences: row not found after INSERT");
+  }
+  return row;
+}
+
+// ── favorite_places(よく行く場所) ───────────────────────────
+
+export function getFavoritePlaces(userId: number): FavoritePlaceRow[] {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM favorite_places WHERE user_id = ? ORDER BY id")
+    .all(userId) as FavoritePlaceRow[];
+}
+
+export function countFavoritePlaces(userId: number): number {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT COUNT(*) AS n FROM favorite_places WHERE user_id = ?")
+    .get(userId) as { n: number };
+  return row.n;
+}
+
+export interface CreateFavoritePlaceData {
+  readonly name: string;
+  readonly category: string | null;
+  readonly addressText: string;
+  readonly lat: number;
+  readonly lng: number;
+}
+
+export function createFavoritePlace(
+  userId: number,
+  data: CreateFavoritePlaceData,
+): FavoritePlaceRow {
+  const db = getDb();
+  const result = db
+    .prepare(
+      `INSERT INTO favorite_places (user_id, name, category, address_text, lat, lng)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    )
+    .run(userId, data.name, data.category, data.addressText, data.lat, data.lng);
+
+  const row = db
+    .prepare("SELECT * FROM favorite_places WHERE id = ?")
+    .get(Number(result.lastInsertRowid)) as FavoritePlaceRow | undefined;
+  if (!row) {
+    throw new Error("Failed to create favorite_place: row not found after INSERT");
+  }
+  return row;
+}
+
+/**
+ * お気に入り地点を削除する。削除できたら true。
+ * ★user_id 条件を必ず付ける(他人の行を消せないようにする = 本人セッションのデータのみ操作)。
+ */
+export function deleteFavoritePlace(userId: number, placeId: number): boolean {
+  const db = getDb();
+  const result = db
+    .prepare("DELETE FROM favorite_places WHERE id = ? AND user_id = ?")
+    .run(placeId, userId);
+  return result.changes > 0;
 }
 
 // ── diag_results ────────────────────────────────────────────

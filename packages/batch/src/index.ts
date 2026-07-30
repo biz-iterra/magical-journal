@@ -20,6 +20,7 @@ import { closeDb, initConnection } from "./db/connection.js";
 import {
   getActiveUsers,
   getPersonalityReportJson,
+  getUserJournalSettings,
   hasMonthlyFortune,
   saveDailyFortune,
   saveMonthlyFortune,
@@ -72,6 +73,7 @@ async function runDailyOnce(date: string): Promise<number> {
     placesOffsetKm: config.placesOffsetKm,
     placesRadiusMeters: config.placesRadiusMeters,
     getUsers: getActiveUsers,
+    getSettings: getUserJournalSettings,
     saveFortune: saveDailyFortune,
   });
 
@@ -144,6 +146,7 @@ function startScheduler(): void {
         placesOffsetKm: cfg.placesOffsetKm,
         placesRadiusMeters: cfg.placesRadiusMeters,
         getUsers: getActiveUsers,
+        getSettings: getUserJournalSettings,
         saveFortune: saveDailyFortune,
       })
         .then(() =>

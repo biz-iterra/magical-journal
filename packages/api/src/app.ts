@@ -13,6 +13,7 @@ import line from "./routes/line.js";
 import monthly from "./routes/monthly.js";
 import personality from "./routes/personality.js";
 import postal from "./routes/postal.js";
+import preferences from "./routes/preferences.js";
 import profile from "./routes/profile.js";
 import register from "./routes/register.js";
 import today from "./routes/today.js";
@@ -45,7 +46,7 @@ app.use(
       }
       return undefined;
     },
-    allowMethods: ["GET", "POST", "PATCH", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     maxAge: 86400,
   }),
@@ -80,5 +81,6 @@ app.route("/api/postal", postal);
 app.route("/api/today", today);
 app.route("/api/monthly", monthly);
 app.route("/api/personality", personality);
+app.route("/api/preferences", preferences);
 
 export default app;

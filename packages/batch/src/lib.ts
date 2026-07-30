@@ -14,6 +14,31 @@ export { generateDailyForUser } from "./daily/run.js";
 export type { ActiveUser, GenerateDailyDeps, Logger } from "./daily/run.js";
 export type { DailyStructured } from "./daily/structured.js";
 export type { DailySections } from "./daily/sections.js";
+
+// ── 「今日のジャーナル」設定(お気に入り地点・活動時間帯・移動手段・休日曜日) ──
+// API 側の入力検証・DB 読み出しでも同じ定義を使い、二重定義を作らない。
+export type {
+  FavoritePlace,
+  PlacesDistance,
+  ResolvedSchedulePreferences,
+  TransportMode,
+  UserJournalSettings,
+  UserPreferences,
+} from "./daily/preferences.js";
+export {
+  DEFAULT_HOLIDAY_WEEKDAYS,
+  EMPTY_JOURNAL_SETTINGS,
+  FAVORITE_PLACES_LIMIT,
+  TRANSPORT_DISTANCE,
+  TRANSPORT_MODES,
+  isHoliday,
+  isHolidayWeekdays,
+  isTimeOfDay,
+  isTransportMode,
+  resolvePlacesDistance,
+  transportLabel,
+  weekdayOf,
+} from "./daily/preferences.js";
 export { generatePersonalityForUser } from "./personality/run.js";
 export type { GeneratePersonalityDeps } from "./personality/run.js";
 export type { PersonalityReport, PersonalityItems } from "./personality/report.js";

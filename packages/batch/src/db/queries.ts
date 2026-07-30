@@ -4,6 +4,8 @@
  * 個人情報(氏名・住所)はバッチの処理に不要なため取得しない(最小取得)。
  */
 
+import type { FavoritePlace, UserJournalSettings, UserPreferences } from "../daily/preferences.js";
+import { isHolidayWeekdays, isTransportMode } from "../daily/preferences.js";
 import type { ActiveUser } from "../daily/run.js";
 import { getDb } from "./connection.js";
 
@@ -28,6 +30,67 @@ export function getActiveUsers(): ActiveUser[] {
     )
     .all() as ActiveUser[];
   return rows;
+}
+
+/** user_preferences の行(未設定なら行なし) */
+interface UserPreferencesRow {
+  readonly wakeTime: string | null;
+  readonly sleepTime: string | null;
+  readonly transportMode: string | null;
+  readonly holidayWeekdays: string | null;
+}
+
+/**
+ * holiday_weekdays(JSON 文字列)を安全にパースする。
+ * 壊れた値・不正な値は null(= 既定の土日)として扱い、生成を止めない。
+ */
+function parseHolidayWeekdays(raw: string | null): readonly number[] | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return isHolidayWeekdays(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * ユーザーの「今日のジャーナル」設定(user_preferences + favorite_places)を返す。
+ * 行が無ければ preferences=null / favoritePlaces=[](= 従来の既定挙動)。
+ * ★住所文字列は取得しない(生成には名前・座標・カテゴリのみ必要。最小取得)。
+ */
+export function getUserJournalSettings(userId: number): UserJournalSettings {
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT wake_time        AS wakeTime,
+              sleep_time       AS sleepTime,
+              transport_mode   AS transportMode,
+              holiday_weekdays AS holidayWeekdays
+         FROM user_preferences
+        WHERE user_id = ?`,
+    )
+    .get(userId) as UserPreferencesRow | undefined;
+
+  const preferences: UserPreferences | null = row
+    ? {
+        wakeTime: row.wakeTime,
+        sleepTime: row.sleepTime,
+        transportMode: isTransportMode(row.transportMode) ? row.transportMode : null,
+        holidayWeekdays: parseHolidayWeekdays(row.holidayWeekdays),
+      }
+    : null;
+
+  const favoritePlaces = db
+    .prepare(
+      `SELECT id, name, category, lat, lng
+         FROM favorite_places
+        WHERE user_id = ?
+        ORDER BY id`,
+    )
+    .all(userId) as FavoritePlace[];
+
+  return { preferences, favoritePlaces };
 }
 
 /**

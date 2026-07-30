@@ -37,6 +37,31 @@ export interface ProfileRow {
   readonly updated_at: string;
 }
 
+export interface UserPreferencesRow {
+  readonly user_id: number;
+  /** 起床時刻 "HH:MM"。null=未設定 */
+  readonly wake_time: string | null;
+  /** 就寝時刻 "HH:MM"。null=未設定 */
+  readonly sleep_time: string | null;
+  /** 'walk'|'bike'|'train'|'car'。null=未設定 */
+  readonly transport_mode: string | null;
+  /** 休日にする曜日の JSON 配列 "[0,6]"(0=日 … 6=土)。null=未設定(既定の土日) */
+  readonly holiday_weekdays: string | null;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+export interface FavoritePlaceRow {
+  readonly id: number;
+  readonly user_id: number;
+  readonly name: string;
+  readonly category: string | null;
+  readonly address_text: string;
+  readonly lat: number;
+  readonly lng: number;
+  readonly created_at: string;
+}
+
 export interface DiagResultRow {
   readonly id: number;
   readonly user_id: number;
@@ -93,4 +118,24 @@ export interface ProfileUpdateBody {
   readonly lat?: number;
   readonly lng?: number;
   readonly charStyle?: "male" | "female";
+}
+
+/**
+ * PATCH /api/preferences のボディ(すべて任意)。
+ * 値に null を渡すとその項目を未設定へ戻す。キー自体が無ければ変更しない。
+ */
+export interface PreferencesUpdateBody {
+  readonly wakeTime?: string | null;
+  readonly sleepTime?: string | null;
+  readonly transportMode?: string | null;
+  readonly holidayWeekdays?: number[] | null;
+}
+
+/** POST /api/preferences/places のボディ(お気に入り地点の追加) */
+export interface FavoritePlaceCreateBody {
+  readonly name: string;
+  readonly addressText: string;
+  readonly lat: number;
+  readonly lng: number;
+  readonly category?: string | null;
 }

@@ -103,7 +103,8 @@ describe("各領域のアクション(docs/01 §リッチメニュー設計)", (
     { label: "友達のタイプ診断", type: "uri", value: `https://liff.line.me/${LIFF_ID}/friend` },
     { label: "今日の運勢", type: "message", value: "今日の運勢" },
     { label: "マイタイプ", type: "message", value: "マイタイプ" },
-    { label: "月間運勢", type: "uri", value: `https://liff.line.me/${LIFF_ID}/monthly` },
+    // v0.6: 月間ページは今日のジャーナルへ集約したため、⑤のリンク先は today
+    { label: "月間運勢", type: "uri", value: `https://liff.line.me/${LIFF_ID}/` },
     { label: "設定", type: "uri", value: `https://liff.line.me/${LIFF_ID}/settings` },
   ] as const;
 
