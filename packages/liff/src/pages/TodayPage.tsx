@@ -1,4 +1,6 @@
+import { MasterCalendarProvider } from "@mj/calendar-data";
 import type { Direction8, DirectionFortune, MisfortuneType, StarNumber } from "@mj/engine";
+import { judgeDirections } from "@mj/engine";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
@@ -30,7 +32,8 @@ interface DirectionItem {
   direction: Direction8;
   star: StarNumber;
   fortune: DirectionFortune;
-  misfortunes: MisfortuneType[];
+  // engine の DirectionResult と揃える(日付切替時はその戻り値をそのまま使うため)
+  misfortunes: readonly MisfortuneType[];
 }
 
 /** 時盤 1 刻ぶん(GET /api/today の hourly 要素) */
@@ -116,6 +119,22 @@ function orderHourly(hourly: HourlyItem[]): HourlyItem[] {
   return [...hourly].sort((a, b) => hourDisplayRank(a.index) - hourDisplayRank(b.index));
 }
 
+/** "YYYY-MM-DD" を年・月・日に分解する */
+function parseDateParts(dateStr: string): { y: number; m: number; d: number } {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return { y: y ?? 0, m: m ?? 1, d: d ?? 1 };
+}
+
+/** その年月の日数(当月内で日を切り替える範囲) */
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}
+
+/** 年・月・日から "YYYY-MM-DD" を組み立てる */
+function toDateStr(y: number, m: number, d: number): string {
+  return `${String(y)}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
 // ── コンポーネント ─────────────────────────────────────────
 
 export function TodayPage() {
@@ -127,9 +146,54 @@ export function TodayPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("day");
   // 選択中の刻(API の index。0=子刻 … 11=亥刻)。初期値は現在時刻の刻。
   const [selectedKoku, setSelectedKoku] = useState<number>(() => currentKokuIndex());
+  // 日盤で見ている日(当月内)。null = 今日(API の値をそのまま使う)
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  // 月盤で見ている気学年・気学月。null = 今月(API の値をそのまま使う)
+  const [selectedMonth, setSelectedMonth] = useState<{ year: number; month: number } | null>(null);
+
+  // 暦マスタ。任意の日付・年月の盤をこの場で算出するために使う
+  // (engine はブラウザでも動く設計。通信せずに切り替えられる)
+  const calendar = useMemo(() => new MasterCalendarProvider(), []);
 
   // 表示順(1:00〜3:00 → … → 23:00〜1:00)に並べ替えた 12 刻
   const hourlyOrdered = useMemo(() => orderHourly(data?.hourly ?? []), [data]);
+
+  // hourly が無い/空(旧 API)なら時盤タブ自体を出さない。エラーにはしない。
+  const hasHourly = hourlyOrdered.length > 0;
+  const effectiveTab: TabKey = activeTab === "hour" && !hasHourly ? "day" : activeTab;
+
+  /**
+   * 日盤・月盤で「今日以外」を選んでいるときの盤と方位。
+   * 暦マスタ + engine でこの場で算出する(サーバーと同じ計算・同じマスタなので
+   * 今日を選べば API の値と一致する)。今日・今月なら null を返し、API の値を使う。
+   *
+   * ★Hooks はすべて早期 return より前で呼ぶ(条件付き呼び出しにしない)。
+   */
+  const computed = useMemo(() => {
+    if (!data) return null;
+    const t = parseDateParts(data.date);
+
+    if (effectiveTab === "day" && selectedDay != null) {
+      const dateStr = toDateStr(t.y, t.m, selectedDay);
+      const ban = calendar.getDayBan(dateStr);
+      const junishi = calendar.getDayJunishi(dateStr);
+      return {
+        directions: judgeDirections(ban, data.honmeiStar, data.getsumeiStar, junishi),
+        center: ban.center,
+      };
+    }
+
+    if (effectiveTab === "month" && selectedMonth != null) {
+      const ban = calendar.getMonthBan(selectedMonth.year, selectedMonth.month);
+      const junishi = calendar.getMonthJunishi(selectedMonth.year, selectedMonth.month);
+      return {
+        directions: judgeDirections(ban, data.honmeiStar, data.getsumeiStar, junishi),
+        center: ban.center,
+      };
+    }
+
+    return null;
+  }, [data, effectiveTab, selectedDay, selectedMonth, calendar]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -189,10 +253,6 @@ export function TodayPage() {
     );
   }
 
-  // hourly が無い/空(旧 API)なら時盤タブ自体を出さない。エラーにはしない。
-  const hasHourly = hourlyOrdered.length > 0;
-  const effectiveTab: TabKey = activeTab === "hour" && !hasHourly ? "day" : activeTab;
-
   // スライダー位置 = 表示順配列でのインデックス。
   // 現在時刻の刻が見つからなければ 1:00〜3:00(index=1)へフォールバック。
   const kokuPos = (() => {
@@ -203,19 +263,30 @@ export function TodayPage() {
   })();
   const selectedHour = hourlyOrdered[kokuPos] ?? null;
 
-  const directions: DirectionItem[] =
-    effectiveTab === "hour"
-      ? (selectedHour?.directions ?? NO_DIRECTIONS)
-      : data.directions[effectiveTab];
+  // 日盤・月盤は見る日付/年月を切り替えられる。今日・今月なら API の値をそのまま使い、
+  // それ以外は暦マスタ + engine でこの場で算出する(サーバーと同じ計算・同じマスタ)。
+  const today = parseDateParts(data.date);
+  const viewedDate = selectedDay == null ? data.date : toDateStr(today.y, today.m, selectedDay);
+  const viewedMonth = selectedMonth ?? {
+    year: data.monthly?.kigakuYear ?? today.y,
+    month: data.monthly?.kigakuMonth ?? today.m,
+  };
 
-  // 中宮の星。API 応答が中宮を持つのは日盤と時盤のみ(月盤・年盤は未提供)。
-  // 持たない盤では null を渡し、盤の中央は中心の目印だけになる。
+  const directions: DirectionItem[] =
+    computed?.directions ??
+    (effectiveTab === "hour"
+      ? (selectedHour?.directions ?? NO_DIRECTIONS)
+      : data.directions[effectiveTab]);
+
+  // 中宮の星。API 応答が中宮を持つのは日盤と時盤のみだが、
+  // 日付/年月を切り替えたときは算出した盤の中宮を使う。
   const banCenter: StarNumber | null =
-    effectiveTab === "day"
+    computed?.center ??
+    (effectiveTab === "day"
       ? data.dayBan.center
       : effectiveTab === "hour"
         ? (selectedHour?.center ?? null)
-        : null;
+        : null);
 
   const sections = data.fortune?.sections ?? null;
   const charHeading = ownCharacterName ? `${ownCharacterName}からの一言` : "キャラクターからの一言";
@@ -252,6 +323,33 @@ export function TodayPage() {
         ))}
       </div>
 
+      {/* 日盤: 当月内で日を切り替える */}
+      {effectiveTab === "day" && (
+        <DayPicker
+          year={today.y}
+          month={today.m}
+          day={selectedDay ?? today.d}
+          todayDay={today.d}
+          onChange={(d) => setSelectedDay(d === today.d ? null : d)}
+        />
+      )}
+
+      {/* 月盤: 気学の年月を指定して切り替える */}
+      {effectiveTab === "month" && (
+        <MonthPicker
+          year={viewedMonth.year}
+          month={viewedMonth.month}
+          currentYear={data.monthly?.kigakuYear ?? today.y}
+          currentMonth={data.monthly?.kigakuMonth ?? today.m}
+          onChange={(year, month) => {
+            const isCurrent =
+              year === (data.monthly?.kigakuYear ?? today.y) &&
+              month === (data.monthly?.kigakuMonth ?? today.m);
+            setSelectedMonth(isCurrent ? null : { year, month });
+          }}
+        />
+      )}
+
       {/* 時盤: 時間帯スライダー(時盤タブ選択時のみ) */}
       {effectiveTab === "hour" && selectedHour && (
         <HourSlider
@@ -282,6 +380,119 @@ export function TodayPage() {
 
       {/* 5. 今月の運勢(v0.6 で月間ページから集約。今日の話の後に置く) */}
       {data.monthly && <MonthlyFortune monthly={data.monthly} />}
+    </div>
+  );
+}
+
+// ── 盤を見る日付・年月の切り替え ──────────────────────────
+
+/**
+ * 日盤で見る日を当月内で切り替える。
+ * 前後の矢印で1日ずつ動かし、当月の範囲外へは進めない。
+ */
+function DayPicker({
+  year,
+  month,
+  day,
+  todayDay,
+  onChange,
+}: {
+  year: number;
+  month: number;
+  day: number;
+  todayDay: number;
+  onChange: (day: number) => void;
+}) {
+  const last = daysInMonth(year, month);
+  return (
+    <div className={s.pickerRow}>
+      <button
+        type="button"
+        className={s.pickerArrow}
+        aria-label="前の日"
+        disabled={day <= 1}
+        onClick={() => onChange(day - 1)}
+      >
+        ◀
+      </button>
+      <div className={s.pickerValue}>
+        {month}月{day}日{day === todayDay && <span className={s.pickerBadge}>今日</span>}
+      </div>
+      <button
+        type="button"
+        className={s.pickerArrow}
+        aria-label="次の日"
+        disabled={day >= last}
+        onClick={() => onChange(day + 1)}
+      >
+        ▶
+      </button>
+      {day !== todayDay && (
+        <button type="button" className={s.pickerReset} onClick={() => onChange(todayDay)}>
+          今日に戻す
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 月盤で見る年月を切り替える。
+ * 気学の月は節入り基準でカレンダー月とずれるため、その旨をラベルで示す。
+ */
+function MonthPicker({
+  year,
+  month,
+  currentYear,
+  currentMonth,
+  onChange,
+}: {
+  year: number;
+  month: number;
+  currentYear: number;
+  currentMonth: number;
+  onChange: (year: number, month: number) => void;
+}) {
+  // 暦マスタの範囲内で前後数年を選べるようにする
+  const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+  const isCurrent = year === currentYear && month === currentMonth;
+  return (
+    <div className={s.pickerRow}>
+      <select
+        aria-label="年"
+        className={s.pickerSelect}
+        value={String(year)}
+        onChange={(e) => onChange(Number(e.target.value), month)}
+      >
+        {years.map((y) => (
+          <option key={y} value={String(y)}>
+            {y}年
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label="月"
+        className={s.pickerSelect}
+        value={String(month)}
+        onChange={(e) => onChange(year, Number(e.target.value))}
+      >
+        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+          <option key={m} value={String(m)}>
+            {m}月
+          </option>
+        ))}
+      </select>
+      {isCurrent ? (
+        <span className={s.pickerBadge}>今月</span>
+      ) : (
+        <button
+          type="button"
+          className={s.pickerReset}
+          onClick={() => onChange(currentYear, currentMonth)}
+        >
+          今月に戻す
+        </button>
+      )}
     </div>
   );
 }

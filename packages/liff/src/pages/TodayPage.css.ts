@@ -173,6 +173,79 @@ export const scheduleLine = style({
 // 方位盤(羅針盤)の見た目とセル配色は components/direction-compass に集約した
 // (中宮も盤の中央に統合したため、ここにあった見出し・グリッドのスタイルは不要)。
 
+// ── 盤を見る日付・年月の切り替え ──────────────────────────
+
+export const pickerRow = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  marginBottom: "12px",
+  padding: "8px 10px",
+  backgroundColor: vars.color.surface,
+  borderRadius: "10px",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+});
+
+export const pickerArrow = style({
+  flexShrink: 0,
+  width: "36px",
+  height: "36px",
+  fontSize: "13px",
+  color: vars.color.textBody,
+  backgroundColor: vars.color.surfaceSubtle,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: "8px",
+  cursor: "pointer",
+  selectors: {
+    "&:disabled": { opacity: 0.35, cursor: "default" },
+  },
+});
+
+export const pickerValue = style({
+  flex: 1,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  fontSize: "15px",
+  fontWeight: 600,
+  color: vars.color.text,
+});
+
+export const pickerSelect = style({
+  flex: 1,
+  appearance: "none",
+  padding: "8px 10px",
+  fontSize: "14px",
+  textAlign: "center",
+  color: vars.color.text,
+  backgroundColor: vars.color.surfaceSubtle,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: "8px",
+  outline: "none",
+});
+
+/** 「今日」「今月」を示す小さなラベル */
+export const pickerBadge = style({
+  fontSize: "10px",
+  fontWeight: 600,
+  color: vars.color.onAccent,
+  backgroundColor: vars.color.accent,
+  borderRadius: "999px",
+  padding: "2px 6px",
+});
+
+export const pickerReset = style({
+  flexShrink: 0,
+  padding: "6px 8px",
+  fontSize: "11px",
+  color: vars.color.accent,
+  backgroundColor: "transparent",
+  border: `1px solid ${vars.color.accentBorder}`,
+  borderRadius: "8px",
+  cursor: "pointer",
+});
+
 // ── タブ切替 ──────────────────────────────────────────────
 
 export const tabRow = style({
