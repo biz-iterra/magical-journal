@@ -16,7 +16,9 @@
     "test": "vitest run --passWithNoTests",
     "richmenu": "tsx src/richmenu/register.ts",
     "richmenu:dry": "tsx src/richmenu/register.ts --dry-run",
-    "richmenu:list": "tsx src/richmenu/register.ts --list"
+    "richmenu:list": "tsx src/richmenu/register.ts --list",
+    "personality:static": "tsx src/personality/static-generate.ts",
+    "personality:static:dry": "tsx src/personality/static-generate.ts --dry-run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.5",

@@ -14,7 +14,9 @@
     "typecheck": "tsc -b",
     "richmenu": "pnpm --filter @mj/batch richmenu",
     "richmenu:dry": "pnpm --filter @mj/batch richmenu:dry",
-    "richmenu:list": "pnpm --filter @mj/batch richmenu:list"
+    "richmenu:list": "pnpm --filter @mj/batch richmenu:list",
+    "personality:static": "pnpm --filter @mj/batch personality:static",
+    "personality:static:dry": "pnpm --filter @mj/batch personality:static:dry"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",

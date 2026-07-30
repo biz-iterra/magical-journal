@@ -14,6 +14,8 @@ import {
 import type { NumerologyNumber, StarNumber, ZodiacSign } from "@mj/engine";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useCharacterTheme } from "../components/CharacterTheme";
+import type { PersonalityReport } from "../services/personality";
+import { fetchStaticPersonality } from "../services/personality-static";
 import { characterImagePath } from "../utils/character-assets";
 import * as s from "./FriendDiagPage.css";
 
@@ -263,6 +265,13 @@ export function FriendDiagPage() {
           {/* ポテンシャルタイプ */}
           <PotentialCard potential={result.potential} />
 
+          {/* AI占い(事前生成レポートの読み込み。診断ごとに開き直す) */}
+          <FriendAiFortuneSection
+            key={`${result.potential.primaryType}-${result.zodiac}`}
+            potentialType={result.potential.primaryType}
+            zodiac={result.zodiac}
+          />
+
           {/* 星座 */}
           <div className={s.card}>
             <div className={s.cardLabel}>星座</div>
@@ -306,7 +315,117 @@ export function FriendDiagPage() {
         入力されたデータはサーバーに送信されません。
         <br />
         すべての計算はこの端末内で完結しています。
+        <br />
+        AI占いも、タイプ×星座ごとに用意された文章を読み込むだけです。
       </p>
+    </div>
+  );
+}
+
+// ── AI占い(性質レポート・静的配信) ─────────────────────
+
+// 表示する6項目の順序と見出し(マイタイプの AI占いと同一)。
+const REPORT_ITEMS: ReadonlyArray<{ key: keyof PersonalityReport["items"]; label: string }> = [
+  { key: "basicNature", label: "基本的な性質" },
+  { key: "workStrength", label: "仕事上の強み" },
+  { key: "workWeakness", label: "仕事上の弱み" },
+  { key: "socialTendency", label: "人付き合いの傾向" },
+  { key: "goodAt", label: "得意なこと" },
+  { key: "badAt", label: "苦手なこと" },
+];
+
+/**
+ * 友達診断の AI占いセクション。
+ *
+ * タイプ×星座で決まる 144 通りの事前生成レポートのうち、該当する 1 ファイルを
+ * `/personality/<slug>.json` から読むだけ。入力値の送信も認証も伴わない。
+ * 未生成(ファイルが無い)なら「準備中」を表示し、既存の診断結果表示は壊さない。
+ */
+function FriendAiFortuneSection({
+  potentialType,
+  zodiac,
+}: {
+  potentialType: PotentialTypeId;
+  zodiac: ZodiacSign;
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false); // 一度でも取得完了したか(未生成と未取得を区別)
+  const [report, setReport] = useState<PersonalityReport | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const openAndFetch = useCallback(async () => {
+    setOpen(true);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchStaticPersonality(potentialType, zodiac);
+      setReport(res);
+      setLoaded(true);
+    } catch {
+      // 通信エラーのみここへ来る(未生成は null で「準備中」)
+      setError("レポートを読み込めませんでした。通信状況を確認してください。");
+    } finally {
+      setLoading(false);
+    }
+  }, [potentialType, zodiac]);
+
+  if (!open) {
+    return (
+      <button type="button" className={s.aiButton} onClick={openAndFetch}>
+        AI占い
+        <span className={s.aiButtonSub}>この友達の性質レポートを見る</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className={s.reportCard}>
+      {loading ? (
+        <div className={s.reportLoadingWrap}>
+          <div className={s.spinner} />
+          <p className={s.reportEmpty}>レポートを読み込んでいます…</p>
+        </div>
+      ) : report ? (
+        <>
+          <div className={s.reportBadge}>AI占い</div>
+          <div className={s.reportTitle}>{report.typeName}</div>
+          <div className={s.reportSubtitle}>{report.zodiacName}</div>
+
+          {REPORT_ITEMS.map(({ key, label }) => {
+            const text = report.items[key];
+            if (!text) return null;
+            return (
+              <div key={key} className={s.reportItem}>
+                <div className={s.reportItemLabel}>{label}</div>
+                <p className={s.reportItemText}>{text}</p>
+              </div>
+            );
+          })}
+        </>
+      ) : (
+        <>
+          {error ? (
+            <p className={s.reportErrorText}>{error}</p>
+          ) : loaded ? (
+            <p className={s.reportEmpty}>
+              このタイプの性質レポートは準備中です。
+              <br />
+              公開までしばらくお待ちください。
+            </p>
+          ) : null}
+          <div className={s.reportRetryRow}>
+            <button
+              type="button"
+              className={s.reportRetryButton}
+              onClick={openAndFetch}
+              disabled={loading}
+            >
+              再読み込み
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

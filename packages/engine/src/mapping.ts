@@ -146,6 +146,12 @@ export const CHARACTER_MAP: ReadonlyMap<PotentialTypeId, CharacterInfo> = new Ma
 ]);
 
 /**
+ * 12 タイプ ID の一覧(CHARACTER_MAP から導出。別表を作らない)。
+ * 全タイプを列挙する処理(静的レポートの事前生成など)はこれを使う。
+ */
+export const POTENTIAL_TYPE_IDS: readonly PotentialTypeId[] = [...CHARACTER_MAP.keys()];
+
+/**
  * タイプ ID からキャラクター情報を取得する。
  * @throws タイプ ID が見つからない場合
  */

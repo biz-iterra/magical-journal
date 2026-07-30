@@ -20,6 +20,12 @@ const ZODIAC_BOUNDARIES: readonly [number, number, ZodiacSign][] = [
 ];
 
 /**
+ * 12 星座の一覧(境界テーブルから導出。別表を作らない)。
+ * 並びは境界テーブル順(水瓶座 1/20 始まり)。全星座を列挙する処理はこれを使う。
+ */
+export const ZODIAC_SIGNS: readonly ZodiacSign[] = ZODIAC_BOUNDARIES.map(([, , sign]) => sign);
+
+/**
  * 生年月日から星座を判定する。
  * @param birthDate "YYYY-MM-DD" 形式
  * @returns 12星座のいずれか

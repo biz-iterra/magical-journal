@@ -33,7 +33,16 @@ export { POTENTIAL_TABLE } from "./potential-table.js";
 export { computePotentialValue, computePotential, potentialModule } from "./potential.js";
 
 // modules
-export { computeZodiac, zodiacModule } from "./zodiac.js";
+export { computeZodiac, zodiacModule, ZODIAC_SIGNS } from "./zodiac.js";
+
+// 性質レポート(静的配信)の slug
+export {
+  PERSONALITY_STATIC_DIR,
+  personalitySlug,
+  personalityStaticFileName,
+  personalityStaticPath,
+  personalityTypeSlug,
+} from "./personality-slug.js";
 
 // numerology
 export { computeLifepath, lifepathModule } from "./numerology/lifepath.js";
@@ -67,4 +76,9 @@ export {
 
 // mapping
 export type { CharacterInfo } from "./mapping.js";
-export { CHARACTER_MAP, getCharacter, getCharacterName } from "./mapping.js";
+export {
+  CHARACTER_MAP,
+  POTENTIAL_TYPE_IDS,
+  getCharacter,
+  getCharacterName,
+} from "./mapping.js";

@@ -57,6 +57,25 @@ export function buildPersonalityStructured(
 }
 
 /**
+ * タイプ×星座を直接指定して構造化データを組み立てる(生年月日を介さない)。
+ *
+ * 144 通り(12 タイプ × 12 星座)の静的レポート事前生成で使う。表示名は engine の
+ * 一次情報(getCharacter の typeName = docs/04 適用済み、ZODIAC_JA)をそのまま使い、
+ * 独自の名前表を作らない。
+ */
+export function personalityStructuredOf(
+  potentialType: PotentialTypeId,
+  zodiac: ZodiacSign,
+): PersonalityStructured {
+  return {
+    potentialType,
+    typeName: getCharacter(potentialType).typeName,
+    zodiac,
+    zodiacName: ZODIAC_JA[zodiac],
+  };
+}
+
+/**
  * 再生成要否の判定に使う署名(タイプ×星座)。
  * タイプ(出生時刻変更で変わりうる)または星座が変われば再生成する。
  */
