@@ -4,7 +4,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError, apiClient } from "../api/client";
 import { PostalCodeField } from "../components/PostalCodeField";
+import { clientError } from "../errors";
 import { geocodeAddress } from "../services/geocode";
+import type { FavoritePlace, PreferencesPatch, TransportMode } from "../services/preferences";
+import {
+  addFavoritePlace,
+  deleteFavoritePlace,
+  getPreferences,
+  updatePreferences,
+} from "../services/preferences";
 import { characterImagePath } from "../utils/character-assets";
 import * as s from "./SettingsPage.css";
 
@@ -37,6 +45,32 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
+/** 活動時間帯は 5 分刻みで十分(出生時刻のような分単位の精度は不要) */
+const PREF_MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
+
+const TRANSPORT_OPTIONS: ReadonlyArray<{ value: TransportMode; label: string }> = [
+  { value: "walk", label: "徒歩" },
+  { value: "bike", label: "自転車" },
+  { value: "train", label: "電車" },
+  { value: "car", label: "車" },
+];
+
+/** 曜日番号は日曜=0 〜 土曜=6(API と同じ) */
+const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const;
+
+/** "HH:MM" を時/分の文字列に分解する(未設定なら空文字) */
+function splitTime(time: string | null): { h: string; m: string } {
+  if (!time) return { h: "", m: "" };
+  const [h, m] = time.split(":");
+  return { h: String(Number(h)), m: String(Number(m)) };
+}
+
+/** 時/分の選択値から "HH:MM" を組み立てる。どちらか未選択なら null(未設定) */
+function joinTime(h: string, m: string): string | null {
+  if (h === "" || m === "") return null;
+  return `${pad2(Number(h))}:${pad2(Number(m))}`;
+}
+
 // ── コンポーネント ────────────────────────────────────────
 
 /**
@@ -63,6 +97,21 @@ export function SettingsPage() {
   const [address, setAddress] = useState("");
   const [charStyle, setCharStyle] = useState<"male" | "female">("male");
 
+  // ── 今日のジャーナルの設定(診断には影響しない) ──
+  const [wakeH, setWakeH] = useState("");
+  const [wakeM, setWakeM] = useState("");
+  const [sleepH, setSleepH] = useState("");
+  const [sleepM, setSleepM] = useState("");
+  const [transportMode, setTransportMode] = useState<TransportMode | null>(null);
+  const [holidayWeekdays, setHolidayWeekdays] = useState<number[]>([]);
+  const [places, setPlaces] = useState<FavoritePlace[]>([]);
+  const [placesLimit, setPlacesLimit] = useState(10);
+  // 場所の追加フォーム
+  const [newName, setNewName] = useState("");
+  const [newAddress, setNewAddress] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [addingPlace, setAddingPlace] = useState(false);
+
   const fetchProfile = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -79,6 +128,26 @@ export function SettingsPage() {
       }
       setAddress(p.addressText ?? "");
       setCharStyle(p.charStyle);
+
+      // ジャーナルの設定も併せて取得(失敗しても診断設定の編集は続けられるようにする)
+      try {
+        const prefRes = await getPreferences();
+        const pref = prefRes.preferences;
+        const wake = splitTime(pref.wakeTime);
+        const sleep = splitTime(pref.sleepTime);
+        setWakeH(wake.h);
+        setWakeM(wake.m);
+        setSleepH(sleep.h);
+        setSleepM(sleep.m);
+        setTransportMode(pref.transportMode);
+        // 未設定なら既定(土日)が effectiveHolidayWeekdays に入っている
+        setHolidayWeekdays([...pref.effectiveHolidayWeekdays]);
+        setPlaces([...prefRes.places]);
+        setPlacesLimit(prefRes.limits.places);
+      } catch (err) {
+        // 握りつぶさず表示する(旧 API に繋がっている場合もここに来る)
+        setError(err instanceof Error ? err.message : "ジャーナル設定の取得に失敗しました");
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
         navigate("/register", { replace: true });
@@ -141,13 +210,101 @@ export function SettingsPage() {
       // 更新後の値で表示を同期
       setOrigBirthTime(res.profile.birthTime);
       setOrigAddress(res.profile.addressText);
+
+      // ジャーナルの設定も同じ保存操作でまとめて送る(操作感を1つにするため)。
+      // null を送れば未設定に戻り、holidayWeekdays の空配列は「休日なし」を意味する。
+      const prefPatch: PreferencesPatch = {
+        wakeTime: joinTime(wakeH, wakeM),
+        sleepTime: joinTime(sleepH, sleepM),
+        transportMode,
+        holidayWeekdays,
+      };
+      await updatePreferences(prefPatch);
+
       setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました");
     } finally {
       setSaving(false);
     }
-  }, [saving, charStyle, currentBirthTime, origBirthTime, address, origAddress]);
+  }, [
+    saving,
+    charStyle,
+    currentBirthTime,
+    origBirthTime,
+    address,
+    origAddress,
+    wakeH,
+    wakeM,
+    sleepH,
+    sleepM,
+    transportMode,
+    holidayWeekdays,
+  ]);
+
+  /** 曜日トグル(全解除=休日なしも許容する) */
+  const toggleHoliday = useCallback((day: number) => {
+    setSaved(false);
+    setHolidayWeekdays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort((a, b) => a - b),
+    );
+  }, []);
+
+  /**
+   * よく行く場所を追加する。
+   * 座標はここで Geocoding して渡す(サーバーは Geocoding しない)。
+   * 一覧操作は即時反映にする(保存ボタンを待たせない)。
+   */
+  const handleAddPlace = useCallback(async () => {
+    if (addingPlace) return;
+    const name = newName.trim();
+    const addressText = newAddress.trim();
+    if (!name || !addressText) {
+      setError("名前と住所を入力してください");
+      return;
+    }
+
+    setAddingPlace(true);
+    setError(null);
+    try {
+      // よく行く場所は方位計算に座標が必須なので、取れないときは登録しない。
+      // geocodeAddress は「該当なし/失敗」なら MJ-MAP-002 を throw し、
+      // 「Maps キー未設定(開発時)」では null を返す。後者は別メッセージにする。
+      const latLng = await geocodeAddress(addressText);
+      if (!latLng) {
+        setError(clientError("MJ-MAP-001"));
+        return;
+      }
+      const category = newCategory.trim();
+      const res = await addFavoritePlace({
+        name,
+        addressText,
+        lat: latLng.lat,
+        lng: latLng.lng,
+        ...(category ? { category } : {}),
+      });
+      setPlaces((prev) => [...prev, res.place]);
+      setNewName("");
+      setNewAddress("");
+      setNewCategory("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "場所の追加に失敗しました");
+    } finally {
+      setAddingPlace(false);
+    }
+  }, [addingPlace, newName, newAddress, newCategory]);
+
+  /** よく行く場所を削除する(更新 API は無いので、変更は削除→追加で行う) */
+  const handleDeletePlace = useCallback(async (place: FavoritePlace) => {
+    if (!window.confirm(`「${place.name}」を削除しますか?`)) return;
+    setError(null);
+    try {
+      await deleteFavoritePlace(place.id);
+      setPlaces((prev) => prev.filter((p) => p.id !== place.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "場所の削除に失敗しました");
+    }
+  }, []);
 
   if (loading) {
     return <div className={s.loadingWrap}>読み込み中...</div>;
@@ -159,6 +316,9 @@ export function SettingsPage() {
 
       {error && <div className={`${s.banner} ${s.bannerError}`}>{error}</div>}
       {saved && <div className={`${s.banner} ${s.bannerSuccess}`}>保存しました</div>}
+
+      {/* ── 診断に関わる設定 ── */}
+      <div className={s.groupTitle}>診断に関わる設定</div>
 
       {/* 生年月日(変更不可) */}
       <div className={s.section}>
@@ -267,6 +427,210 @@ export function SettingsPage() {
               </div>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* ── 今日のジャーナルの設定(診断には影響しない) ── */}
+      <div className={s.groupTitle}>今日のジャーナルの設定</div>
+      <p className={s.groupNote}>
+        ここで設定した内容が、今日のスケジュール提案に反映されます。診断結果は変わりません。
+      </p>
+
+      {/* 活動時間帯 */}
+      <div className={s.section}>
+        <div className={s.sectionLabel}>活動時間帯</div>
+        <div className={s.selectRow}>
+          <select
+            aria-label="起床時"
+            className={s.select}
+            value={wakeH}
+            onChange={(e) => {
+              setWakeH(e.target.value);
+              setSaved(false);
+            }}
+          >
+            <option value="">起床</option>
+            {HOURS.map((h) => (
+              <option key={`wh${h}`} value={String(h)}>
+                {h}時
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="起床分"
+            className={s.select}
+            value={wakeM}
+            onChange={(e) => {
+              setWakeM(e.target.value);
+              setSaved(false);
+            }}
+          >
+            <option value="">分</option>
+            {PREF_MINUTES.map((m) => (
+              <option key={`wm${m}`} value={String(m)}>
+                {pad2(m)}分
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={s.selectRow} style={{ marginTop: "8px" }}>
+          <select
+            aria-label="就寝時"
+            className={s.select}
+            value={sleepH}
+            onChange={(e) => {
+              setSleepH(e.target.value);
+              setSaved(false);
+            }}
+          >
+            <option value="">就寝</option>
+            {HOURS.map((h) => (
+              <option key={`sh${h}`} value={String(h)}>
+                {h}時
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="就寝分"
+            className={s.select}
+            value={sleepM}
+            onChange={(e) => {
+              setSleepM(e.target.value);
+              setSaved(false);
+            }}
+          >
+            <option value="">分</option>
+            {PREF_MINUTES.map((m) => (
+              <option key={`sm${m}`} value={String(m)}>
+                {pad2(m)}分
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className={s.hint}>
+          スケジュールをこの時間帯に収めます。「起床」「就寝」を空に戻すと未設定になります
+        </p>
+      </div>
+
+      {/* 移動手段 */}
+      <div className={s.section}>
+        <div className={s.sectionLabel}>主な移動手段</div>
+        <div className={s.chipRow}>
+          {TRANSPORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`${s.chip} ${transportMode === opt.value ? s.chipSelected : ""}`}
+              onClick={() => {
+                // 同じものを押したら未設定に戻す
+                setTransportMode((prev) => (prev === opt.value ? null : opt.value));
+                setSaved(false);
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <p className={s.hint}>提案される移動距離の目安が変わります(もう一度押すと未設定)</p>
+      </div>
+
+      {/* 休日にする曜日 */}
+      <div className={s.section}>
+        <div className={s.sectionLabel}>休日にする曜日</div>
+        <div className={s.chipRow}>
+          {WEEKDAY_LABELS.map((label, day) => (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={holidayWeekdays.includes(day)}
+              className={`${s.weekdayChip} ${holidayWeekdays.includes(day) ? s.chipSelected : ""}`}
+              onClick={() => toggleHoliday(day)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className={s.hint}>
+          休日は過ごし方中心、平日は仕事中心のスケジュールになります(すべて解除も可)
+        </p>
+      </div>
+
+      {/* よく行く場所 */}
+      <div className={s.section}>
+        <div className={s.sectionLabel}>よく行く場所</div>
+        <p className={s.hint} style={{ marginTop: 0, marginBottom: "10px" }}>
+          その日の吉方位に合う場所が、スケジュールの行先として提案されます(最大{placesLimit}件)
+        </p>
+
+        {places.length > 0 ? (
+          <div className={s.placeList}>
+            {places.map((place) => (
+              <div key={place.id} className={s.placeItem}>
+                <div className={s.placeBody}>
+                  <div className={s.placeName}>{place.name}</div>
+                  <div className={s.placeMeta}>
+                    {place.category ? `${place.category}・` : ""}
+                    {place.addressText}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className={s.placeDelete}
+                  onClick={() => handleDeletePlace(place)}
+                >
+                  削除
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={s.placeEmpty}>
+            まだ登録がありません。よく行くカフェやコワーキングスペースを追加しておくと、行先として提案されます
+          </div>
+        )}
+
+        <div className={s.placeForm}>
+          <input
+            type="text"
+            aria-label="場所の名前"
+            className={s.input}
+            placeholder="名前(例: 〇〇コワーキング)"
+            maxLength={60}
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          <PostalCodeField onFound={(addr) => setNewAddress(addr)} />
+          <input
+            type="text"
+            aria-label="場所の住所"
+            className={s.input}
+            placeholder="住所"
+            maxLength={200}
+            value={newAddress}
+            onChange={(e) => setNewAddress(e.target.value)}
+          />
+          <input
+            type="text"
+            aria-label="場所のカテゴリ"
+            className={s.input}
+            placeholder="カテゴリ(任意。例: カフェ)"
+            maxLength={30}
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+          />
+          <button
+            type="button"
+            className={s.subButton}
+            disabled={addingPlace || places.length >= placesLimit}
+            onClick={handleAddPlace}
+          >
+            {addingPlace ? "追加中..." : "この場所を追加"}
+          </button>
+          {places.length >= placesLimit && (
+            <p className={s.hint}>
+              上限{placesLimit}件に達しています。追加するには、いずれかを削除してください
+            </p>
+          )}
         </div>
       </div>
 

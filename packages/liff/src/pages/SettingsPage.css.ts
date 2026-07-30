@@ -167,3 +167,141 @@ export const loadingWrap = style({
   padding: "40px 0",
   color: vars.color.textMuted,
 });
+
+// ── グループ見出し ────────────────────────────────────────
+// 「診断に関わる設定」と「今日のジャーナルの設定」を視覚的に分ける。
+// 診断入力とジャーナルのカスタマイズが混ざって見えないようにするため。
+
+export const groupTitle = style({
+  fontSize: "12px",
+  fontWeight: 700,
+  color: vars.color.textSecondary,
+  letterSpacing: "0.04em",
+  margin: "22px 2px 10px",
+});
+
+export const groupNote = style({
+  fontSize: "11px",
+  lineHeight: 1.6,
+  color: vars.color.textFaint,
+  margin: "-6px 2px 12px",
+});
+
+// ── 選択チップ(移動手段・曜日) ──────────────────────────
+
+export const chipRow = style({
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "6px",
+});
+
+export const chip = style({
+  padding: "8px 12px",
+  fontSize: "13px",
+  color: vars.color.textBody,
+  backgroundColor: vars.color.surfaceSubtle,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: "999px",
+  cursor: "pointer",
+});
+
+export const chipSelected = style({
+  color: vars.color.onAccent,
+  backgroundColor: vars.color.accent,
+  borderColor: vars.color.accent,
+  fontWeight: 600,
+});
+
+/** 曜日チップ(7個が1行に収まるよう幅を詰める) */
+export const weekdayChip = style({
+  flex: 1,
+  minWidth: "0",
+  padding: "8px 0",
+  fontSize: "13px",
+  textAlign: "center",
+  color: vars.color.textBody,
+  backgroundColor: vars.color.surfaceSubtle,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: "8px",
+  cursor: "pointer",
+});
+
+// ── よく行く場所 ──────────────────────────────────────────
+
+export const placeList = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+  marginBottom: "12px",
+});
+
+export const placeItem = style({
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "10px",
+  padding: "10px 12px",
+  backgroundColor: vars.color.surfaceSubtle,
+  border: `1px solid ${vars.color.borderFaint}`,
+  borderRadius: "10px",
+});
+
+export const placeBody = style({
+  flex: 1,
+  minWidth: 0,
+});
+
+export const placeName = style({
+  fontSize: "14px",
+  fontWeight: 600,
+  color: vars.color.text,
+});
+
+export const placeMeta = style({
+  fontSize: "11px",
+  color: vars.color.textFaint,
+  marginTop: "2px",
+  overflowWrap: "anywhere",
+});
+
+export const placeDelete = style({
+  flexShrink: 0,
+  padding: "6px 10px",
+  fontSize: "12px",
+  color: vars.color.textMuted,
+  backgroundColor: "transparent",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: "8px",
+  cursor: "pointer",
+});
+
+export const placeEmpty = style({
+  fontSize: "12px",
+  color: vars.color.textFaint,
+  padding: "8px 0 12px",
+});
+
+/** 場所の追加フォーム(縦積み) */
+export const placeForm = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+  paddingTop: "12px",
+  borderTop: `1px solid ${vars.color.borderHairline}`,
+});
+
+export const subButton = style({
+  padding: "10px 14px",
+  fontSize: "14px",
+  fontWeight: 600,
+  color: vars.color.onAccent,
+  backgroundColor: vars.color.accent,
+  border: "none",
+  borderRadius: "10px",
+  cursor: "pointer",
+  selectors: {
+    "&:disabled": {
+      opacity: 0.5,
+      cursor: "default",
+    },
+  },
+});
