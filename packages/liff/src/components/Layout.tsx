@@ -52,6 +52,13 @@ export function Layout({ children }: LayoutProps) {
             key={item.to}
             to={item.to}
             style={{
+              // docs/06 品質基準: タップ領域 44px 以上
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: "44px",
+              minHeight: "44px",
+              padding: "0 12px",
               fontSize: "12px",
               textAlign: "center",
               color: location.pathname === item.to ? vars.color.accent : vars.color.textTertiary,

@@ -12,19 +12,20 @@ import { vars } from "../../styles/theme.css";
  */
 
 // 盤全体を 1 枚のカードに載せる(運勢カードと同じ流儀)
+// 影は使わず罫線で面を区切る(デザイン計画書 §5)
 export const card = style({
   backgroundColor: vars.color.surface,
-  borderRadius: "16px",
-  padding: "12px",
-  marginBottom: "12px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.lg,
+  padding: vars.space.md,
+  marginBottom: vars.space.md,
 });
 
 // 「上が北」であることの明示(方位盤は回転しない)
 export const northNote = style({
   fontSize: "10px",
   letterSpacing: "0.08em",
-  color: vars.color.textFaint,
+  color: vars.color.textMuted,
   textAlign: "center",
   marginBottom: "6px",
 });
@@ -39,7 +40,7 @@ export const grid = style({
 export const cell = style({
   aspectRatio: "1 / 1",
   minWidth: 0,
-  borderRadius: "10px",
+  borderRadius: vars.radius.sm,
   padding: "6px 4px",
   textAlign: "center",
   display: "flex",

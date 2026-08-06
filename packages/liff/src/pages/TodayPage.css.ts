@@ -4,20 +4,101 @@ import { vars } from "../styles/theme.css";
 // ── ページ全体 ────────────────────────────────────────────
 
 export const container = style({
-  paddingBottom: "24px",
+  paddingBottom: vars.space.xl,
 });
 
-export const dateHeader = style({
-  fontSize: "14px",
-  color: vars.color.textMuted,
-  marginBottom: "4px",
+// ── W-1「気配のヘッダー」(シグネチャ) ─────────────────────
+// デザイン計画書 §4 の採用案。キャラ色の wash を上端から下へ淡く落とし、
+// その中に大きな日付を置く。キャラ本体は描かず、色と余白だけで気配を出す。
+// wash の上には**文字を載せない**規約なので、日付・曜日は紙の上と同じ墨で描く
+// (wash は紙にごく近い明度のため、実測でも AA を維持できる)。
+//
+// Layout の main は左右 16px の余白を持つため、負マージンで全幅に抜く。
+
+export const header = style({
+  position: "relative",
+  marginTop: `calc(-1 * ${vars.space.lg})`,
+  marginLeft: `calc(-1 * ${vars.space.lg})`,
+  marginRight: `calc(-1 * ${vars.space.lg})`,
+  marginBottom: vars.space.lg,
+  padding: `calc(env(safe-area-inset-top, 0px) + ${vars.space.xl}) ${vars.space.lg} ${vars.space.lg}`,
+  overflow: "hidden",
+  borderBottom: `1px solid ${vars.color.border}`,
+  // 上端 = キャラの wash、下端 = 紙へ溶ける
+  backgroundImage: `linear-gradient(180deg, ${vars.color.accentWash} 0%, ${vars.color.bg} 100%)`,
 });
 
-export const pageTitle = style({
-  fontSize: "20px",
-  fontWeight: 600,
+// 和紙の縦罫テクスチャ(気配のみ。情報を持たない装飾なので極薄)
+export const headerTexture = style({
+  position: "absolute",
+  inset: 0,
+  pointerEvents: "none",
+  backgroundImage:
+    "repeating-linear-gradient(90deg, rgba(255,255,255,0.55) 0px, rgba(255,255,255,0.55) 1px, rgba(255,255,255,0) 1px, rgba(255,255,255,0) 7px)",
+});
+
+export const headerInner = style({
+  position: "relative",
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: vars.space.md,
+});
+
+/** 大日付(明朝数字で「暦の顔」を作る) */
+export const headerDate = style({
+  fontFamily: vars.font.heading,
+  fontSize: vars.fontSize.display,
+  fontWeight: 400,
+  lineHeight: vars.lineHeight.tight,
   color: vars.color.text,
-  marginBottom: "16px",
+  fontVariantNumeric: "tabular-nums",
+  letterSpacing: "0.02em",
+});
+
+/** 和暦 ・ 曜日 */
+export const headerMeta = style({
+  marginTop: vars.space.xs,
+  fontSize: vars.fontSize.caption,
+  color: vars.color.textMuted,
+  fontVariantNumeric: "tabular-nums",
+});
+
+/** 画面名。大日付が主役なので静かに添える */
+export const headerTitle = style({
+  marginTop: vars.space.md,
+  fontFamily: vars.font.heading,
+  fontSize: vars.fontSize.caption,
+  fontWeight: 600,
+  letterSpacing: "0.08em",
+  color: vars.color.textSecondary,
+});
+
+/** 右上の小さなキャラ章(円形マーク + 名前) */
+export const headerMark = style({
+  flexShrink: 0,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: vars.space.xs,
+});
+
+export const headerMarkCircle = style({
+  width: "44px",
+  height: "44px",
+  borderRadius: vars.radius.pill,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontFamily: vars.font.heading,
+  fontSize: vars.fontSize.lead,
+  color: vars.color.onAccent,
+  backgroundColor: vars.color.accent,
+});
+
+export const headerMarkName = style({
+  fontSize: "11px",
+  color: vars.color.textMuted,
 });
 
 // ── ローディング / エラー ──────────────────────────────────
@@ -30,7 +111,7 @@ export const loadingWrap = style({
   minHeight: "40dvh",
   gap: "14px",
   color: vars.color.textMuted,
-  fontSize: "14px",
+  fontSize: vars.fontSize.caption,
 });
 
 const spin = keyframes({
@@ -41,14 +122,14 @@ const spin = keyframes({
 export const spinner = style({
   width: "28px",
   height: "28px",
-  borderRadius: "50%",
+  borderRadius: vars.radius.pill,
   border: `3px solid ${vars.color.accentSubtleStrong}`,
   borderTopColor: vars.color.accent,
   animation: `${spin} 0.8s linear infinite`,
 });
 
 export const loadingText = style({
-  fontSize: "13px",
+  fontSize: vars.fontSize.caption,
   color: vars.color.textMuted,
   textAlign: "center",
 });
@@ -59,52 +140,63 @@ export const errorWrap = style({
   justifyContent: "center",
   alignItems: "center",
   minHeight: "40dvh",
-  gap: "12px",
+  gap: vars.space.md,
   padding: "20px",
 });
 
 export const errorText = style({
-  fontSize: "14px",
+  fontSize: vars.fontSize.body,
   color: vars.color.misfortuneText,
   textAlign: "center",
 });
 
 export const retryButton = style({
-  padding: "8px 20px",
-  fontSize: "14px",
+  minHeight: "44px",
+  padding: `${vars.space.sm} 20px`,
+  fontSize: vars.fontSize.body,
   fontWeight: 500,
   color: vars.color.accent,
-  backgroundColor: vars.color.accentSubtle,
-  border: `1px solid ${vars.color.accentBorder}`,
-  borderRadius: "8px",
+  backgroundColor: vars.color.surface,
+  border: `1px solid ${vars.color.accentBorderStrong}`,
+  borderRadius: vars.radius.sm,
   cursor: "pointer",
   ":active": {
-    backgroundColor: vars.color.accentSubtleStrong,
+    backgroundColor: vars.color.accentSubtle,
   },
 });
 
 // ── 運勢テキストカード ───────────────────────────────────
+// 影は使わず罫線で面を区切る(デザイン計画書 §5「過剰な角丸+影」の排除)。
 
 export const fortuneCard = style({
   backgroundColor: vars.color.surface,
-  borderRadius: "16px",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.lg,
   padding: "20px",
-  marginBottom: "12px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+  marginBottom: vars.space.md,
 });
 
 export const fortuneText = style({
-  fontSize: "14px",
-  lineHeight: 1.7,
+  fontSize: vars.fontSize.body,
+  lineHeight: vars.lineHeight.body,
   color: vars.color.textBody,
   whiteSpace: "pre-wrap",
 });
 
+/** キャラの語り(運勢文)。明朝・行間ゆったりで「ゆっくり読ませる」 */
+export const fortuneLead = style({
+  fontFamily: vars.font.heading,
+  fontSize: vars.fontSize.lead,
+  lineHeight: vars.lineHeight.lead,
+  color: vars.color.text,
+  whiteSpace: "pre-wrap",
+});
+
 export const fortuneEmpty = style({
-  fontSize: "13px",
+  fontSize: vars.fontSize.caption,
   color: vars.color.textFaint,
   textAlign: "center",
-  padding: "12px 0",
+  padding: `${vars.space.md} 0`,
 });
 
 // 今月の運勢の補足(気学月は節入り基準でカレンダー月とずれるため明示する)
@@ -115,86 +207,84 @@ export const monthlyMeta = style({
 });
 
 // ── 運勢3セクション(運勢 / スケジュール / キャラの一言) ─────
-// 1枚のカード内に3セクションを縦積みし、セクション間は極薄の仕切りで区切る。
 
-// 2番目以降のセクションに上マージン + 上罫線を付ける
 export const fortuneSection = style({
   selectors: {
     "& + &": {
-      marginTop: "16px",
-      paddingTop: "16px",
+      marginTop: vars.space.lg,
+      paddingTop: vars.space.lg,
       borderTop: `1px solid ${vars.color.borderHairline}`,
     },
   },
 });
 
+/** セクション見出し。細い罫を右へ伸ばして「手帖の項目」に見せる */
 export const fortuneSectionTitle = style({
-  fontSize: "13px",
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space.sm,
+  fontSize: vars.fontSize.caption,
   fontWeight: 600,
+  letterSpacing: "0.04em",
   color: vars.color.accent,
-  marginBottom: "6px",
+  marginBottom: vars.space.sm,
+  "::after": {
+    content: '""',
+    flex: 1,
+    height: "1px",
+    backgroundColor: vars.color.border,
+  },
 });
 
-// キャラの一言セクションの見出し(アクセント色を少し弱める必要はないが、
-// 内容がキャラのトーンであることを示すため本文をアクセント淡背景で括る)
+// キャラの一言。語りであることが分かるよう明朝 + アクセントの縦線で括る
 export const fortuneCharBody = style({
-  fontSize: "14px",
-  lineHeight: 1.7,
-  color: vars.color.textBody,
+  fontFamily: vars.font.heading,
+  fontSize: vars.fontSize.lead,
+  lineHeight: vars.lineHeight.lead,
+  color: vars.color.text,
   whiteSpace: "pre-wrap",
-  backgroundColor: vars.color.accentSubtle,
-  borderRadius: "10px",
-  padding: "12px 14px",
+  borderLeft: `2px solid ${vars.color.accent}`,
+  paddingLeft: "14px",
 });
 
 // ── 今日のスケジュール(複数行タイムライン) ─────────────────
-// schedule は「HH:MM〜HH:MM 場所で行動。どうなるか。」の行を \n 区切りで持つ。
-// 1つの塊にせず、各行を1行ずつ独立して積む。
 
 export const scheduleList = style({
   display: "flex",
   flexDirection: "column",
-  gap: "8px",
+  gap: vars.space.sm,
 });
 
 export const scheduleLine = style({
-  fontSize: "14px",
-  lineHeight: 1.6,
+  fontSize: vars.fontSize.body,
+  lineHeight: vars.lineHeight.body,
   color: vars.color.textBody,
   paddingLeft: "10px",
   borderLeft: `2px solid ${vars.color.accentBorder}`,
 });
-
-// ── 九星情報 ──────────────────────────────────────────────
-// 本命星・月命星のチップは削除した。表示は MyTypePage に集約しており、
-// 唯一の再利用元だった MonthlyPage も今日のジャーナルへ集約して廃止したため(v0.6)。
-
-// ── 方位セクション ───────────────────────────────────────
-// 方位盤(羅針盤)の見た目とセル配色は components/direction-compass に集約した
-// (中宮も盤の中央に統合したため、ここにあった見出し・グリッドのスタイルは不要)。
 
 // ── 盤を見る日付・年月の切り替え ──────────────────────────
 
 export const pickerRow = style({
   display: "flex",
   alignItems: "center",
-  gap: "8px",
-  marginBottom: "12px",
-  padding: "8px 10px",
+  gap: vars.space.sm,
+  marginBottom: vars.space.md,
+  padding: `${vars.space.sm} 10px`,
   backgroundColor: vars.color.surface,
-  borderRadius: "10px",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.md,
 });
 
 export const pickerArrow = style({
   flexShrink: 0,
-  width: "36px",
-  height: "36px",
-  fontSize: "13px",
+  width: "44px",
+  height: "44px",
+  fontSize: vars.fontSize.caption,
   color: vars.color.textBody,
   backgroundColor: vars.color.surfaceSubtle,
   border: `1px solid ${vars.color.border}`,
-  borderRadius: "8px",
+  borderRadius: vars.radius.sm,
   cursor: "pointer",
   selectors: {
     "&:disabled": { opacity: 0.35, cursor: "default" },
@@ -207,21 +297,23 @@ export const pickerValue = style({
   alignItems: "center",
   justifyContent: "center",
   gap: "6px",
-  fontSize: "15px",
+  fontSize: vars.fontSize.body,
   fontWeight: 600,
   color: vars.color.text,
+  fontVariantNumeric: "tabular-nums",
 });
 
 export const pickerSelect = style({
   flex: 1,
   appearance: "none",
-  padding: "8px 10px",
-  fontSize: "14px",
+  minHeight: "44px",
+  padding: `${vars.space.sm} 10px`,
+  fontSize: vars.fontSize.body,
   textAlign: "center",
   color: vars.color.text,
   backgroundColor: vars.color.surfaceSubtle,
   border: `1px solid ${vars.color.border}`,
-  borderRadius: "8px",
+  borderRadius: vars.radius.sm,
   outline: "none",
 });
 
@@ -231,18 +323,19 @@ export const pickerBadge = style({
   fontWeight: 600,
   color: vars.color.onAccent,
   backgroundColor: vars.color.accent,
-  borderRadius: "999px",
+  borderRadius: vars.radius.pill,
   padding: "2px 6px",
 });
 
 export const pickerReset = style({
   flexShrink: 0,
-  padding: "6px 8px",
+  minHeight: "44px",
+  padding: "6px 10px",
   fontSize: "11px",
   color: vars.color.accent,
   backgroundColor: "transparent",
-  border: `1px solid ${vars.color.accentBorder}`,
-  borderRadius: "8px",
+  border: `1px solid ${vars.color.accentBorderStrong}`,
+  borderRadius: vars.radius.sm,
   cursor: "pointer",
 });
 
@@ -250,62 +343,63 @@ export const pickerReset = style({
 
 export const tabRow = style({
   display: "flex",
-  gap: "4px",
-  marginBottom: "12px",
+  gap: vars.space.xs,
+  marginBottom: vars.space.md,
   backgroundColor: vars.color.surfaceMuted,
-  borderRadius: "10px",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.md,
   padding: "3px",
 });
 
 export const tab = style({
   flex: 1,
-  padding: "8px 0",
-  fontSize: "13px",
+  minHeight: "44px",
+  padding: `${vars.space.sm} 0`,
+  fontSize: vars.fontSize.caption,
   fontWeight: 500,
   color: vars.color.textTertiary,
   backgroundColor: "transparent",
-  border: "none",
-  borderRadius: "8px",
+  border: "1px solid transparent",
+  borderRadius: vars.radius.sm,
   cursor: "pointer",
   textAlign: "center",
-  transition: "all 0.15s",
+  transition: "background-color 0.15s, color 0.15s",
 });
 
 export const tabActive = style({
   backgroundColor: vars.color.surface,
+  borderColor: vars.color.border,
   color: vars.color.text,
   fontWeight: 600,
-  boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
 });
 
 // ── 時盤: 時間帯スライダー ─────────────────────────────────
-// 時盤タブ選択時のみ、盤タブの直下に表示する。12刻を 1:00〜3:00 から
-// 順に並べ、子刻(23:00〜1:00)を末尾に置く(表示順は TodayPage 側で決定)。
 
 export const hourPanel = style({
   backgroundColor: vars.color.surface,
-  borderRadius: "12px",
-  padding: "12px 14px 10px",
-  marginBottom: "12px",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.md,
+  padding: `${vars.space.md} 14px 10px`,
+  marginBottom: vars.space.md,
 });
 
 export const hourValue = style({
+  fontFamily: vars.font.heading,
   fontSize: "20px",
-  fontWeight: 700,
+  fontWeight: 600,
   color: vars.color.accent,
   textAlign: "center",
   fontVariantNumeric: "tabular-nums",
   marginBottom: "6px",
 });
 
-// つまみは指で掴める大きさ(28px)。トラックは 8px。
+// つまみは指で掴める大きさ(28px)。トラックは 6px。
 export const hourRange = style({
   WebkitAppearance: "none",
   appearance: "none",
   display: "block",
   width: "100%",
-  height: "28px",
+  height: "44px",
   margin: 0,
   padding: 0,
   backgroundColor: "transparent",
@@ -326,10 +420,9 @@ const trackStyle = {
 const thumbStyle = {
   width: "28px",
   height: "28px",
-  borderRadius: "50%",
+  borderRadius: vars.radius.pill,
   backgroundColor: vars.color.accent,
   border: `2px solid ${vars.color.surface}`,
-  boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
   cursor: "pointer",
 } as const;
 
@@ -350,7 +443,7 @@ export const hourScale = style({
   display: "flex",
   justifyContent: "space-between",
   fontSize: "10px",
-  color: vars.color.textFaint,
+  color: vars.color.textMuted,
   fontVariantNumeric: "tabular-nums",
 });
 
@@ -358,27 +451,30 @@ export const hourScale = style({
 
 export const emptyCard = style({
   backgroundColor: vars.color.surface,
-  borderRadius: "16px",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.lg,
   padding: "32px 20px",
-  marginBottom: "12px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+  marginBottom: vars.space.md,
   textAlign: "center",
 });
 
 export const emptyText = style({
-  fontSize: "14px",
+  fontSize: vars.fontSize.body,
   color: vars.color.textMuted,
-  marginBottom: "16px",
+  marginBottom: vars.space.lg,
 });
 
 export const registerLink = style({
-  display: "inline-block",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "44px",
   padding: "10px 24px",
-  fontSize: "14px",
+  fontSize: vars.fontSize.body,
   fontWeight: 600,
   color: vars.color.onAccent,
   backgroundColor: vars.color.accent,
-  borderRadius: "10px",
+  borderRadius: vars.radius.sm,
   textDecoration: "none",
   ":active": {
     backgroundColor: vars.color.accentStrong,
@@ -388,5 +484,5 @@ export const registerLink = style({
 // ── 方位マップ ──────────────────────────────────────────────
 
 export const mapSection = style({
-  marginTop: "16px",
+  marginTop: vars.space.lg,
 });

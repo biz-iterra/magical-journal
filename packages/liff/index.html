@@ -4,6 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>マジカルジャーナル</title>
+
+    <!--
+      書体(docs/07 デザイン計画書 §3): 本文=Zen Kaku Gothic New / 見出し=Shippori Mincho。
+      LIFF は初回表示速度が要件(中位 Android WebView で 3 秒以内)のため、
+        1. 本文ゴシックのみ通常の stylesheet として先に読む(UI 全体の可読性を優先)
+        2. 見出し明朝は非ブロッキングで後追い(media トリック)
+      いずれも display=swap。Google Fonts の日本語は unicode-range 分割配信のため、
+      実際に使う字だけがダウンロードされる。読み込み失敗時は theme.css.ts の
+      font トークンが端末の和文フォントへフォールバックする。
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600&display=swap"
+      />
+    </noscript>
+
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" charset="utf-8"></script>
   </head>
   <body>

@@ -16,7 +16,8 @@ export const header = style({
 });
 
 export const title = style({
-  fontSize: "20px",
+  fontFamily: vars.font.heading,
+  fontSize: vars.fontSize.title,
   fontWeight: 600,
   color: vars.color.text,
   marginBottom: "4px",
@@ -108,13 +109,13 @@ export const select = style({
   padding: "0 32px 0 12px",
   fontSize: "16px",
   border: `1px solid ${vars.color.borderInput}`,
-  borderRadius: "10px",
+  borderRadius: vars.radius.sm,
   backgroundColor: vars.color.surface,
   color: vars.color.text,
   appearance: "none",
   WebkitAppearance: "none",
   backgroundImage:
-    "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+    "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b655c' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
   backgroundPosition: "right 8px center",
   backgroundRepeat: "no-repeat",
   backgroundSize: "20px 20px",
@@ -126,7 +127,7 @@ export const select = style({
 });
 
 export const selectPlaceholder = style({
-  color: vars.color.textDisabled,
+  color: vars.color.textPlaceholder,
 });
 
 export const input = style({
@@ -135,7 +136,7 @@ export const input = style({
   padding: "0 14px",
   fontSize: "16px",
   border: `1px solid ${vars.color.borderInput}`,
-  borderRadius: "10px",
+  borderRadius: vars.radius.sm,
   backgroundColor: vars.color.surface,
   color: vars.color.text,
   ":focus": {
@@ -158,7 +159,7 @@ export const romajiPreview = style({
   fontSize: "14px",
   color: vars.color.textSecondary,
   backgroundColor: vars.color.surfaceMuted,
-  borderRadius: "8px",
+  borderRadius: vars.radius.sm,
   letterSpacing: "0.05em",
   wordBreak: "break-all",
 });
@@ -179,7 +180,7 @@ export const styleChoices = style({
 export const styleCard = style({
   flex: 1,
   padding: "20px 16px",
-  borderRadius: "12px",
+  borderRadius: vars.radius.md,
   border: `2px solid ${vars.color.border}`,
   backgroundColor: vars.color.surface,
   textAlign: "center",
@@ -225,7 +226,7 @@ export const backButton = style({
   color: vars.color.textTertiary,
   backgroundColor: vars.color.surfaceMuted,
   border: "none",
-  borderRadius: "12px",
+  borderRadius: vars.radius.md,
   cursor: "pointer",
   ":active": {
     backgroundColor: vars.color.border,
@@ -240,10 +241,11 @@ export const nextButton = style({
   color: vars.color.onAccent,
   backgroundColor: vars.color.accent,
   border: "none",
-  borderRadius: "12px",
+  borderRadius: vars.radius.md,
   cursor: "pointer",
   ":disabled": {
-    backgroundColor: vars.color.accentBorder,
+    color: vars.color.textDisabled,
+    backgroundColor: vars.color.surfaceMuted,
     cursor: "not-allowed",
   },
   ":active": {
@@ -259,7 +261,7 @@ export const errorBanner = style({
   fontSize: "13px",
   color: vars.color.misfortuneText,
   backgroundColor: vars.color.misfortuneBg,
-  borderRadius: "8px",
+  borderRadius: vars.radius.sm,
   border: `1px solid ${vars.color.misfortuneBorder}`,
 });
 

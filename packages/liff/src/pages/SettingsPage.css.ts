@@ -6,18 +6,19 @@ export const container = style({
 });
 
 export const pageTitle = style({
-  fontSize: "20px",
-  fontWeight: 700,
+  fontFamily: vars.font.heading,
+  fontSize: vars.fontSize.title,
+  fontWeight: 600,
   color: vars.color.text,
   margin: "8px 0 20px",
 });
 
 export const section = style({
   backgroundColor: vars.color.surface,
-  borderRadius: "14px",
+  borderRadius: vars.radius.lg,
   padding: "16px",
   marginBottom: "14px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+  border: `1px solid ${vars.color.border}`,
 });
 
 export const sectionLabel = style({
@@ -45,24 +46,26 @@ export const selectRow = style({
 
 export const select = style({
   flex: 1,
+  minHeight: "44px",
   appearance: "none",
   padding: "10px 12px",
   fontSize: "15px",
   color: vars.color.text,
   backgroundColor: vars.color.surfaceSubtle,
   border: `1px solid ${vars.color.border}`,
-  borderRadius: "10px",
+  borderRadius: vars.radius.sm,
   outline: "none",
 });
 
 export const input = style({
   width: "100%",
+  minHeight: "44px",
   padding: "10px 12px",
   fontSize: "15px",
   color: vars.color.text,
   backgroundColor: vars.color.surfaceSubtle,
   border: `1px solid ${vars.color.border}`,
-  borderRadius: "10px",
+  borderRadius: vars.radius.sm,
   outline: "none",
   boxSizing: "border-box",
   selectors: {
@@ -89,7 +92,7 @@ export const styleCard = style({
   padding: "14px 8px",
   backgroundColor: vars.color.surfaceSubtle,
   border: `2px solid ${vars.color.border}`,
-  borderRadius: "12px",
+  borderRadius: vars.radius.md,
   cursor: "pointer",
 });
 
@@ -138,7 +141,7 @@ export const saveButton = style({
   color: vars.color.onAccent,
   backgroundColor: vars.color.accent,
   border: "none",
-  borderRadius: "12px",
+  borderRadius: vars.radius.md,
   cursor: "pointer",
   selectors: {
     "&:disabled": { opacity: 0.5 },
@@ -147,7 +150,7 @@ export const saveButton = style({
 
 export const banner = style({
   padding: "10px 12px",
-  borderRadius: "10px",
+  borderRadius: vars.radius.sm,
   fontSize: "13px",
   marginBottom: "14px",
 });
@@ -197,11 +200,12 @@ export const chipRow = style({
 
 export const chip = style({
   padding: "8px 12px",
+  minHeight: "44px",
   fontSize: "13px",
   color: vars.color.textBody,
   backgroundColor: vars.color.surfaceSubtle,
   border: `1px solid ${vars.color.border}`,
-  borderRadius: "999px",
+  borderRadius: vars.radius.pill,
   cursor: "pointer",
 });
 
@@ -215,6 +219,7 @@ export const chipSelected = style({
 /** 曜日チップ(7個が1行に収まるよう幅を詰める) */
 export const weekdayChip = style({
   flex: 1,
+  minHeight: "44px",
   minWidth: "0",
   padding: "8px 0",
   fontSize: "13px",
@@ -222,7 +227,7 @@ export const weekdayChip = style({
   color: vars.color.textBody,
   backgroundColor: vars.color.surfaceSubtle,
   border: `1px solid ${vars.color.border}`,
-  borderRadius: "8px",
+  borderRadius: vars.radius.sm,
   cursor: "pointer",
 });
 
@@ -242,7 +247,7 @@ export const placeItem = style({
   padding: "10px 12px",
   backgroundColor: vars.color.surfaceSubtle,
   border: `1px solid ${vars.color.borderFaint}`,
-  borderRadius: "10px",
+  borderRadius: vars.radius.sm,
 });
 
 export const placeBody = style({
@@ -265,12 +270,14 @@ export const placeMeta = style({
 
 export const placeDelete = style({
   flexShrink: 0,
+  minHeight: "44px",
+  minWidth: "44px",
   padding: "6px 10px",
   fontSize: "12px",
   color: vars.color.textMuted,
   backgroundColor: "transparent",
   border: `1px solid ${vars.color.border}`,
-  borderRadius: "8px",
+  borderRadius: vars.radius.sm,
   cursor: "pointer",
 });
 
@@ -291,12 +298,13 @@ export const placeForm = style({
 
 export const subButton = style({
   padding: "10px 14px",
+  minHeight: "44px",
   fontSize: "14px",
   fontWeight: 600,
   color: vars.color.onAccent,
   backgroundColor: vars.color.accent,
   border: "none",
-  borderRadius: "10px",
+  borderRadius: vars.radius.sm,
   cursor: "pointer",
   selectors: {
     "&:disabled": {

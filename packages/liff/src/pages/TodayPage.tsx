@@ -1,5 +1,11 @@
 import { MasterCalendarProvider } from "@mj/calendar-data";
-import type { Direction8, DirectionFortune, MisfortuneType, StarNumber } from "@mj/engine";
+import type {
+  Direction8,
+  DirectionFortune,
+  MisfortuneType,
+  PotentialTypeId,
+  StarNumber,
+} from "@mj/engine";
 import { judgeDirections } from "@mj/engine";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -7,6 +13,7 @@ import { ApiError, apiClient } from "../api/client";
 import { useCharacterTheme } from "../components/CharacterTheme";
 import { DirectionCompass } from "../components/direction-compass";
 import { DirectionMap } from "../components/direction-map";
+import { characterMotif } from "../utils/character-assets";
 import * as s from "./TodayPage.css";
 
 // ── 定数 ─────────────────────────────────────────────────
@@ -90,12 +97,17 @@ interface TodayResponse {
 
 // ── ヘルパー ──────────────────────────────────────────────
 
-function formatDate(dateStr: string): string {
-  const [y, m, d] = dateStr.split("-");
-  const dt = new Date(Number(y), Number(m) - 1, Number(d));
-  const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-  const dow = weekdays[dt.getDay()] ?? "";
-  return `${y}年${Number(m)}月${Number(d)}日（${dow}）`;
+const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"] as const;
+
+/** "YYYY-MM-DD" を W-1 ヘッダー用の表示要素に分解する。 */
+function formatHeaderDate(dateStr: string): { big: string; meta: string } {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const year = y ?? 0;
+  const dt = new Date(year, (m ?? 1) - 1, d ?? 1);
+  const dow = WEEKDAYS[dt.getDay()] ?? "";
+  // 和暦は令和(2019-05-01〜)のみ扱い、範囲外は西暦のまま表示する
+  const era = year >= 2019 ? `令和${year - 2018}年` : `${year}年`;
+  return { big: `${m}.${d}`, meta: `${era} ・ ${dow}曜` };
 }
 
 /**
@@ -139,7 +151,7 @@ function toDateStr(y: number, m: number, d: number): string {
 
 export function TodayPage() {
   const navigate = useNavigate();
-  const { ownCharacterName } = useCharacterTheme();
+  const { ownCharacterName, themeType } = useCharacterTheme();
   const [data, setData] = useState<TodayResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -293,8 +305,8 @@ export function TodayPage() {
 
   return (
     <div className={s.container}>
-      <div className={s.dateHeader}>{formatDate(data.date)}</div>
-      <h1 className={s.pageTitle}>今日のジャーナル</h1>
+      {/* W-1「気配のヘッダー」: キャラ色の wash + 明朝の大日付 + 小さなキャラ章 */}
+      <TodayHeader date={data.date} typeId={themeType} characterName={ownCharacterName} />
 
       {/* 1. 今日の運勢(3セクションの運勢 → 単一テキスト → 準備中 の順にフォールバック) */}
       <div className={s.fortuneCard}>
@@ -381,6 +393,52 @@ export function TodayPage() {
       {/* 5. 今月の運勢(v0.6 で月間ページから集約。今日の話の後に置く) */}
       {data.monthly && <MonthlyFortune monthly={data.monthly} />}
     </div>
+  );
+}
+
+// ── W-1「気配のヘッダー」(シグネチャ) ─────────────────────
+
+/**
+ * 今日のページ上端のヘッダー。
+ *
+ * デザイン計画書 §4「案 W-1 気配のヘッダー」の実装。キャラ色の wash を上端から
+ * 下へ落とし、その中に明朝の大日付を置く。キャラ本体は描かず、右上の小さな
+ * 円形マーク(モチーフ 1 文字)だけで気配を示す。
+ *
+ * ※ 計画書のワイヤーにある二十四節気チップは、API が節気を返さないため出さない
+ *   (計画書自身が「データ供給が無ければ W-1 単独で進める」としている)。
+ */
+function TodayHeader({
+  date,
+  typeId,
+  characterName,
+}: {
+  date: string;
+  typeId: PotentialTypeId | null;
+  characterName: string | null;
+}) {
+  const { big, meta } = formatHeaderDate(date);
+  return (
+    <header className={s.header}>
+      <div className={s.headerTexture} />
+      <div className={s.headerInner}>
+        <div>
+          <div className={s.headerDate} data-num>
+            {big}
+          </div>
+          <div className={s.headerMeta}>{meta}</div>
+          <h1 className={s.headerTitle}>今日のジャーナル</h1>
+        </div>
+        {typeId && (
+          <div className={s.headerMark}>
+            <span className={s.headerMarkCircle} aria-hidden="true">
+              {characterMotif(typeId)}
+            </span>
+            {characterName && <span className={s.headerMarkName}>{characterName}</span>}
+          </div>
+        )}
+      </div>
+    </header>
   );
 }
 
@@ -537,14 +595,15 @@ function FortuneMain({ fortune }: { fortune: TodayResponse["fortune"] }) {
     return (
       <>
         <div className={s.fortuneSectionTitle}>今日の運勢</div>
-        <p className={s.fortuneText}>{fortune.sections.fortune}</p>
+        {/* 運勢文はキャラの語り。明朝・行間ゆったりで「ゆっくり読ませる」 */}
+        <p className={s.fortuneLead}>{fortune.sections.fortune}</p>
       </>
     );
   }
 
   // 2. 後方互換: 単一テキスト(sections が無い場合)
   if (fortune && !fortune.sections && fortune.text) {
-    return <p className={s.fortuneText}>{fortune.text}</p>;
+    return <p className={s.fortuneLead}>{fortune.text}</p>;
   }
 
   // 3. 未生成/生成失敗/本文が空

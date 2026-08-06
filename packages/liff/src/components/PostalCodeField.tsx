@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { clientError } from "../errors";
 import { lookupPostalCode } from "../services/postal";
+import { vars } from "../styles/theme.css";
 
 interface Props {
   /** 住所が見つかったときに呼ばれる(住所欄へ反映する) */
@@ -53,10 +54,11 @@ export function PostalCodeField({ onFound }: Props) {
           style={{
             flex: 1,
             padding: "10px 12px",
-            fontSize: "15px",
-            backgroundColor: "#f9fafb",
-            border: "1px solid #e5e7eb",
-            borderRadius: "10px",
+            fontSize: vars.fontSize.body,
+            color: vars.color.text,
+            backgroundColor: vars.color.surfaceSubtle,
+            border: `1px solid ${vars.color.borderInput}`,
+            borderRadius: vars.radius.sm,
             outline: "none",
             boxSizing: "border-box",
           }}
@@ -66,13 +68,16 @@ export function PostalCodeField({ onFound }: Props) {
           disabled={loading || zip.length !== 7}
           onClick={() => void search(zip)}
           style={{
+            minHeight: "44px",
             padding: "0 16px",
-            fontSize: "14px",
+            fontSize: vars.fontSize.caption,
             fontWeight: 600,
-            color: "#fff",
-            backgroundColor: loading || zip.length !== 7 ? "#c7d2fe" : "#6366f1",
+            // 非活性は淡いアクセント塗り+白文字にせず、沈めた面 + 非活性文字にする
+            color: loading || zip.length !== 7 ? vars.color.textDisabled : vars.color.onAccent,
+            backgroundColor:
+              loading || zip.length !== 7 ? vars.color.surfaceMuted : vars.color.accent,
             border: "none",
-            borderRadius: "10px",
+            borderRadius: vars.radius.sm,
             cursor: loading || zip.length !== 7 ? "default" : "pointer",
             whiteSpace: "nowrap",
           }}
@@ -80,7 +85,11 @@ export function PostalCodeField({ onFound }: Props) {
           {loading ? "検索中" : "住所検索"}
         </button>
       </div>
-      {error && <p style={{ fontSize: "11px", color: "#ef4444", marginTop: "4px" }}>{error}</p>}
+      {error && (
+        <p style={{ fontSize: "11px", color: vars.color.misfortuneText, marginTop: "4px" }}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

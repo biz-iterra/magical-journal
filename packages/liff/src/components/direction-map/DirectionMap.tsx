@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { clientError } from "../../errors";
+import { vars } from "../../styles/theme.css";
 import { DISTANCE_RINGS_KM, getFortuneColor, getSectorAngle } from "./geometry";
 import { GoogleMapsProvider } from "./google-maps-provider";
 import type { DirectionMapProps } from "./types";
@@ -77,9 +78,9 @@ export function DirectionMap({ center, directions, height = "300px" }: Direction
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#f3f4f6",
-          borderRadius: "12px",
-          color: "#999",
+          backgroundColor: vars.color.surfaceMuted,
+          borderRadius: vars.radius.md,
+          color: vars.color.textMuted,
           fontSize: "13px",
         }}
       >
@@ -96,9 +97,9 @@ export function DirectionMap({ center, directions, height = "300px" }: Direction
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#fef2f2",
-          borderRadius: "12px",
-          color: "#dc2626",
+          backgroundColor: vars.color.misfortuneBg,
+          borderRadius: vars.radius.md,
+          color: vars.color.misfortuneText,
           fontSize: "13px",
         }}
       >
@@ -113,7 +114,7 @@ export function DirectionMap({ center, directions, height = "300px" }: Direction
         ref={containerRef}
         style={{
           height,
-          borderRadius: "12px",
+          borderRadius: vars.radius.md,
           overflow: "hidden",
         }}
       />
@@ -125,9 +126,9 @@ export function DirectionMap({ center, directions, height = "300px" }: Direction
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "rgba(249,250,251,0.8)",
-            borderRadius: "12px",
-            color: "#888",
+            backgroundColor: vars.color.overlayScrim,
+            borderRadius: vars.radius.md,
+            color: vars.color.textMuted,
             fontSize: "13px",
           }}
         >
@@ -155,7 +156,7 @@ function MapLegend() {
         gap: "12px",
         marginTop: "8px",
         fontSize: "11px",
-        color: "#666",
+        color: vars.color.textSecondary,
       }}
     >
       {items.map((item) => (

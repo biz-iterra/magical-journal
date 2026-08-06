@@ -8,7 +8,8 @@ export const container = style({
 });
 
 export const pageTitle = style({
-  fontSize: "18px",
+  fontFamily: vars.font.heading,
+  fontSize: vars.fontSize.title,
   fontWeight: 600,
   color: vars.color.text,
   marginBottom: "16px",
@@ -48,7 +49,7 @@ export const retryButton = style({
   color: vars.color.accent,
   backgroundColor: vars.color.accentSubtle,
   border: `1px solid ${vars.color.accentBorder}`,
-  borderRadius: "8px",
+  borderRadius: vars.radius.sm,
   cursor: "pointer",
   ":active": {
     backgroundColor: vars.color.accentSubtleStrong,
@@ -59,10 +60,10 @@ export const retryButton = style({
 
 export const mainCard = style({
   backgroundColor: vars.color.surface,
-  borderRadius: "16px",
+  borderRadius: vars.radius.lg,
   padding: "24px 20px",
   marginBottom: "12px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+  border: `1px solid ${vars.color.border}`,
 });
 
 export const mainCardLabel = style({
@@ -75,6 +76,7 @@ export const mainCardLabel = style({
 });
 
 export const typeCodeLarge = style({
+  fontFamily: vars.font.heading,
   fontSize: "32px",
   fontWeight: 700,
   color: vars.color.text,
@@ -83,6 +85,7 @@ export const typeCodeLarge = style({
 });
 
 export const typeNameLarge = style({
+  fontFamily: vars.font.heading,
   fontSize: "16px",
   fontWeight: 500,
   color: vars.color.textSecondary,
@@ -109,7 +112,7 @@ export const hybridSecondary = style({
   marginTop: "20px",
   padding: "12px 14px",
   backgroundColor: vars.color.surfaceSubtle,
-  borderRadius: "12px",
+  borderRadius: vars.radius.md,
 });
 
 export const hybridSecondaryLabel = style({
@@ -215,10 +218,10 @@ export const charPlaceholderSmall = style({
 
 export const card = style({
   backgroundColor: vars.color.surface,
-  borderRadius: "12px",
+  borderRadius: vars.radius.md,
   padding: "16px 20px",
   marginBottom: "10px",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+  border: `1px solid ${vars.color.border}`,
 });
 
 export const cardLabel = style({
@@ -268,7 +271,7 @@ export const aiButton = style({
   color: vars.color.onAccent,
   backgroundColor: vars.color.accent,
   border: "none",
-  borderRadius: "12px",
+  borderRadius: vars.radius.md,
   cursor: "pointer",
   marginBottom: "12px",
   ":active": {
@@ -292,10 +295,10 @@ export const aiButtonSub = style({
 // レポート本体カード
 export const reportCard = style({
   backgroundColor: vars.color.surface,
-  borderRadius: "16px",
+  borderRadius: vars.radius.lg,
   padding: "20px",
   marginBottom: "12px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+  border: `1px solid ${vars.color.border}`,
 });
 
 export const reportHeaderRow = style({
@@ -315,6 +318,7 @@ export const reportBadge = style({
 });
 
 export const reportTitle = style({
+  fontFamily: vars.font.heading,
   fontSize: "18px",
   fontWeight: 700,
   color: vars.color.text,
@@ -395,7 +399,7 @@ export const regenButton = style({
   color: vars.color.textTertiary,
   backgroundColor: vars.color.surfaceSubtle,
   border: `1px solid ${vars.color.border}`,
-  borderRadius: "8px",
+  borderRadius: vars.radius.sm,
   cursor: "pointer",
   ":active": {
     backgroundColor: vars.color.surfaceMuted,
