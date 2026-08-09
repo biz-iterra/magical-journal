@@ -74,6 +74,15 @@ export {
   kigakuDirectionModule,
 } from "./kigaku/direction.js";
 
+// 象意マスタ(docs/14)
+export type { StarMeaning, StarKeywords, DirectionEffect } from "./kigaku/shougi.js";
+export {
+  STAR_MEANINGS,
+  DIRECTION_EFFECTS,
+  getStarMeaning,
+  getDirectionEffect,
+} from "./kigaku/shougi.js";
+
 // mapping
 export type { CharacterInfo } from "./mapping.js";
 export {

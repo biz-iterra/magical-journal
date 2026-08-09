@@ -17,6 +17,7 @@
 | `docs/11_診断モジュール規約.md` | 診断のプラグイン化規約。**診断の追加・保留・入力収集はすべてこの規約に従う** |
 | `docs/12_APIリファレンス・エラーコード.md` | REST API 仕様と全エラーコードの一覧・意味・対処法。**エラーコードを追加・変更したら `packages/api/src/errors.ts`・`packages/liff/src/errors.ts` とこの表を必ず同期する** |
 | `docs/13_デプロイ・接続手順書.md` | 実装完了後に本番稼働させるまでの接続・設定手順(NAS/Cloudflare/LINE/Google)。環境変数リファレンス・運用コマンド集・トラブル早見表を含む |
+| `docs/14_象意マスタ.md` | 方位・九星の象意(9星の象意/8方位 × 吉凶の効果)。方位モーダルの表示文言の正。**変更は人間承認必須**(実装は `packages/engine/src/kigaku/shougi.ts`) |
 
 `docs/08_進捗管理.md`(pm が維持)と `docs/09_実機テストチェックリスト.md`(qa-lead が作成)は開発中に生成する。
 
@@ -35,21 +36,8 @@
 
 ## リポジトリ構成
 
-```
-magical-journal/
-├─ CLAUDE.md
-├─ docs/                  # 仕様書(一次情報)
-├─ packages/
-│  ├─ engine/             # 診断エンジン(純TS・依存ゼロ・LIFFとAPIの両方から利用)
-│  ├─ calendar-data/      # 暦マスタ生成スクリプト+検証ツール
-│  ├─ api/                # Hono REST API(LIFFトークン検証・診断・当日データ)
-│  ├─ batch/              # 夜間/月次バッチ・LINE webhook・Flexカード・LLM抽象化
-│  └─ liff/               # React + Vite + vanilla-extract フロント
-├─ infra/                 # docker-compose.yml, cloudflared設定, デプロイ手順
-└─ .claude/agents/        # エージェントチーム定義
-```
-
-pnpm workspace のモノレポ。`engine` はブラウザ(LIFF)と Node(api/batch)の両方で動くこと(DOM/Node API に依存しない)。
+pnpm workspace のモノレポ(`packages/` 配下に engine / calendar-data / api / batch / liff)。
+`engine` はブラウザ(LIFF)と Node(api/batch)の両方で動くこと(DOM/Node API に依存しない)。
 
 ## エージェントチーム(6名)
 
@@ -66,15 +54,13 @@ pnpm workspace のモノレポ。`engine` はブラウザ(LIFF)と Node(api/batc
 - フェーズ完了は qa-lead のゲート充足 + pm の受入判定 + 実機テスト(docs/09、人間実施)を経ること
 - 日常の小さな修正では全工程を通さない。全体レビュー・受入はフェーズ移行時と重要変更時に限定する
 
-## 技術スタック
+## 技術スタック(差し替え可能にしている箇所)
 
-- TypeScript(strict)/ pnpm workspace
-- API: Hono(Node.js)、DB: SQLite(WAL モード、better-sqlite3)
-- バッチ: node-cron
-- フロント: React + Vite + vanilla-extract(`@iterra-inc/ui` の知見を流用)
+依存の一覧は各 package.json を見ること。設計上ロックインを避けている箇所だけ記す:
+
 - 地図: Google Maps JavaScript API(抽象化レイヤ経由。Leaflet+地理院タイルへ差替可能に)
 - LLM: `LlmProvider` インターフェースで抽象化(Claude / GPT を設定切替)
-- インフラ: Docker Compose on NAS + Cloudflare Tunnel + Cloudflare Pages
+- フロントの UI 実装は `@iterra-inc/ui` の知見を流用(依存はしていない)
 
 ## テスト方針
 
