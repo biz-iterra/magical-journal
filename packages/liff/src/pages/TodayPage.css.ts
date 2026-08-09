@@ -317,6 +317,25 @@ export const pickerSelect = style({
   outline: "none",
 });
 
+/** 日付そのものを選ぶ入力(モバイルではネイティブの日付ピッカーが開く) */
+export const pickerDate = style({
+  appearance: "none",
+  minHeight: "44px",
+  padding: `${vars.space.xs} ${vars.space.sm}`,
+  fontFamily: "inherit",
+  fontSize: vars.fontSize.body,
+  fontWeight: 600,
+  color: vars.color.text,
+  backgroundColor: "transparent",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.sm,
+  outline: "none",
+  fontVariantNumeric: "tabular-nums",
+  selectors: {
+    "&:focus": { borderColor: vars.color.accent },
+  },
+});
+
 /** 「今日」「今月」を示す小さなラベル */
 export const pickerBadge = style({
   fontSize: "10px",

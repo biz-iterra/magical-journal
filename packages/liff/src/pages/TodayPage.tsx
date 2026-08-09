@@ -33,6 +33,13 @@ const TABS_WITH_HOUR: TabKey[] = ["day", "month", "year", "hour"];
 /** 空配列の共有インスタンス(毎レンダーで新しい配列を作ると地図が再描画される) */
 const NO_DIRECTIONS: DirectionItem[] = [];
 
+/**
+ * 暦マスタが持つ日付の範囲(節入りデータの収録年)。
+ * この外を選ぶと盤を算出できないため、日付入力の min/max で選択自体を防ぐ。
+ */
+const CALENDAR_MIN_DATE = "1920-01-01";
+const CALENDAR_MAX_DATE = "2050-12-31";
+
 // ── API レスポンス型 ────────────────────────────────────────
 
 interface DirectionItem {
@@ -158,8 +165,8 @@ export function TodayPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("day");
   // 選択中の刻(API の index。0=子刻 … 11=亥刻)。初期値は現在時刻の刻。
   const [selectedKoku, setSelectedKoku] = useState<number>(() => currentKokuIndex());
-  // 日盤で見ている日(当月内)。null = 今日(API の値をそのまま使う)
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  // 日盤で見ている日付 "YYYY-MM-DD"。null = 今日(API の値をそのまま使う)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // 月盤で見ている気学年・気学月。null = 今月(API の値をそのまま使う)
   const [selectedMonth, setSelectedMonth] = useState<{ year: number; month: number } | null>(null);
 
@@ -183,29 +190,35 @@ export function TodayPage() {
    */
   const computed = useMemo(() => {
     if (!data) return null;
-    const t = parseDateParts(data.date);
 
-    if (effectiveTab === "day" && selectedDay != null) {
-      const dateStr = toDateStr(t.y, t.m, selectedDay);
-      const ban = calendar.getDayBan(dateStr);
-      const junishi = calendar.getDayJunishi(dateStr);
-      return {
-        directions: judgeDirections(ban, data.honmeiStar, data.getsumeiStar, junishi),
-        center: ban.center,
-      };
-    }
+    // 暦マスタの範囲外を選ぶと暦の取得が例外になる。画面を壊さずメッセージにする。
+    try {
+      if (effectiveTab === "day" && selectedDate != null) {
+        const ban = calendar.getDayBan(selectedDate);
+        const junishi = calendar.getDayJunishi(selectedDate);
+        return {
+          directions: judgeDirections(ban, data.honmeiStar, data.getsumeiStar, junishi),
+          center: ban.center,
+          outOfRange: false,
+        };
+      }
 
-    if (effectiveTab === "month" && selectedMonth != null) {
-      const ban = calendar.getMonthBan(selectedMonth.year, selectedMonth.month);
-      const junishi = calendar.getMonthJunishi(selectedMonth.year, selectedMonth.month);
-      return {
-        directions: judgeDirections(ban, data.honmeiStar, data.getsumeiStar, junishi),
-        center: ban.center,
-      };
+      if (effectiveTab === "month" && selectedMonth != null) {
+        const ban = calendar.getMonthBan(selectedMonth.year, selectedMonth.month);
+        const junishi = calendar.getMonthJunishi(selectedMonth.year, selectedMonth.month);
+        return {
+          directions: judgeDirections(ban, data.honmeiStar, data.getsumeiStar, junishi),
+          center: ban.center,
+          outOfRange: false,
+        };
+      }
+    } catch {
+      // 暦データが無い期間。方位は出せないので、その旨だけ返す
+      return { directions: NO_DIRECTIONS, center: null, outOfRange: true };
     }
 
     return null;
-  }, [data, effectiveTab, selectedDay, selectedMonth, calendar]);
+  }, [data, effectiveTab, selectedDate, selectedMonth, calendar]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -278,7 +291,7 @@ export function TodayPage() {
   // 日盤・月盤は見る日付/年月を切り替えられる。今日・今月なら API の値をそのまま使い、
   // それ以外は暦マスタ + engine でこの場で算出する(サーバーと同じ計算・同じマスタ)。
   const today = parseDateParts(data.date);
-  const viewedDate = selectedDay == null ? data.date : toDateStr(today.y, today.m, selectedDay);
+  const viewedDate = selectedDate ?? data.date;
   const viewedMonth = selectedMonth ?? {
     year: data.monthly?.kigakuYear ?? today.y,
     month: data.monthly?.kigakuMonth ?? today.m,
@@ -335,14 +348,12 @@ export function TodayPage() {
         ))}
       </div>
 
-      {/* 日盤: 当月内で日を切り替える */}
+      {/* 日盤: 任意の年月日を選んで切り替える */}
       {effectiveTab === "day" && (
         <DayPicker
-          year={today.y}
-          month={today.m}
-          day={selectedDay ?? today.d}
-          todayDay={today.d}
-          onChange={(d) => setSelectedDay(d === today.d ? null : d)}
+          date={viewedDate}
+          todayDate={data.date}
+          onChange={(d) => setSelectedDate(d === data.date ? null : d)}
         />
       )}
 
@@ -370,6 +381,15 @@ export function TodayPage() {
           current={selectedHour}
           onChange={(item) => setSelectedKoku(item.index)}
         />
+      )}
+
+      {/* 暦データを持たない期間を選んだとき(方位は出せない) */}
+      {computed?.outOfRange && (
+        <div className={s.fortuneCard}>
+          <p className={s.fortuneEmpty}>
+            この日付の暦データがありません。別の日付を選んでください。
+          </p>
+        </div>
       )}
 
       {/* 方位盤(羅針盤。中宮は盤の中央に統合表示する) */}
@@ -449,44 +469,62 @@ function TodayHeader({
  * 前後の矢印で1日ずつ動かし、当月の範囲外へは進めない。
  */
 function DayPicker({
-  year,
-  month,
-  day,
-  todayDay,
+  date,
+  todayDate,
   onChange,
 }: {
-  year: number;
-  month: number;
-  day: number;
-  todayDay: number;
-  onChange: (day: number) => void;
+  /** 表示中の日付 "YYYY-MM-DD" */
+  date: string;
+  /** 今日の日付 "YYYY-MM-DD" */
+  todayDate: string;
+  onChange: (date: string) => void;
 }) {
-  const last = daysInMonth(year, month);
+  const p = parseDateParts(date);
+  const isToday = date === todayDate;
+
+  // 前後の日へ(月・年をまたいで移動できる)
+  const shift = (delta: number) => {
+    const d = new Date(p.y, p.m - 1, p.d + delta);
+    onChange(toDateStr(d.getFullYear(), d.getMonth() + 1, d.getDate()));
+  };
+
   return (
     <div className={s.pickerRow}>
       <button
         type="button"
         className={s.pickerArrow}
         aria-label="前の日"
-        disabled={day <= 1}
-        onClick={() => onChange(day - 1)}
+        disabled={date <= CALENDAR_MIN_DATE}
+        onClick={() => shift(-1)}
       >
         ◀
       </button>
       <div className={s.pickerValue}>
-        {month}月{day}日{day === todayDay && <span className={s.pickerBadge}>今日</span>}
+        {/* 日付そのものを直接選べる(モバイルではネイティブの日付ピッカーが開く) */}
+        <input
+          type="date"
+          aria-label="日盤を見る日付"
+          className={s.pickerDate}
+          value={date}
+          min={CALENDAR_MIN_DATE}
+          max={CALENDAR_MAX_DATE}
+          onChange={(e) => {
+            if (e.target.value) onChange(e.target.value);
+          }}
+        />
+        {isToday && <span className={s.pickerBadge}>今日</span>}
       </div>
       <button
         type="button"
         className={s.pickerArrow}
         aria-label="次の日"
-        disabled={day >= last}
-        onClick={() => onChange(day + 1)}
+        disabled={date >= CALENDAR_MAX_DATE}
+        onClick={() => shift(1)}
       >
         ▶
       </button>
-      {day !== todayDay && (
-        <button type="button" className={s.pickerReset} onClick={() => onChange(todayDay)}>
+      {!isToday && (
+        <button type="button" className={s.pickerReset} onClick={() => onChange(todayDate)}>
           今日に戻す
         </button>
       )}
