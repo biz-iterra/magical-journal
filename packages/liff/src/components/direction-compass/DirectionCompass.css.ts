@@ -51,6 +51,28 @@ export const cell = style({
   overflow: "hidden",
 });
 
+/**
+ * タップで詳細モーダルを開くセル(interactive 時)。
+ * 見た目は非対話のセルと同じにし、「押せる」ことは押下時の縮みとフォーカスリングで示す。
+ * タップ領域はセルそのもの(3 列グリッドの正方形 ≒ 100px)なので 44px を満たす。
+ */
+export const cellButton = style({
+  width: "100%",
+  appearance: "none",
+  fontFamily: "inherit",
+  color: "inherit",
+  cursor: "pointer",
+  WebkitTapHighlightColor: "transparent",
+  transition: "transform 120ms ease",
+  selectors: {
+    "&:active": { transform: "scale(0.97)" },
+    "&:focus-visible": {
+      outline: "none",
+      boxShadow: `0 0 0 3px ${vars.color.accentFocusRing}`,
+    },
+  },
+});
+
 // 4 隅の外側の角を大きく丸め、盤らしいシルエットにする
 export const corner = styleVariants({
   NW: { borderTopLeftRadius: "40px" },

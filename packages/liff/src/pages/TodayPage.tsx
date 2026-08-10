@@ -393,7 +393,12 @@ export function TodayPage() {
       )}
 
       {/* 方位盤(羅針盤。中宮は盤の中央に統合表示する) */}
-      <DirectionCompass directions={directions} center={banCenter} />
+      <DirectionCompass
+        directions={directions}
+        center={banCenter}
+        interactive
+        banLabel={TAB_LABELS[effectiveTab]}
+      />
 
       {/* 方位マップ(地図) */}
       {data.homeLatLng && (

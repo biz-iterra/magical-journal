@@ -1,5 +1,9 @@
 import type { Direction8, DirectionFortune, MisfortuneType, StarNumber } from "@mj/engine";
+import { getStarMeaning } from "@mj/engine";
+import { useCallback, useRef, useState } from "react";
 import * as s from "./DirectionCompass.css";
+import { DirectionDetailModal } from "./DirectionDetailModal";
+import { DIR_LABELS, MISFORTUNE_LABELS, fortuneLabel } from "./labels";
 
 /**
  * 方位盤(羅針盤)表示。
@@ -14,43 +18,11 @@ import * as s from "./DirectionCompass.css";
  *   南西  南  南東
  *
  * DOM の並び順 = 視覚上の並び順(grid-area / order による並べ替えはしない)。
+ *
+ * `interactive` を渡すと 8 方位のセルがボタンになり、タップで詳細モーダル
+ * (方位・回座星・吉凶・方位の効果・九星の効果)を開く。中宮は方位ではないので
+ * タップ対象にしない。既定は非対話(他画面の見た目・挙動を変えない)。
  */
-
-const STAR_NAMES: Record<number, string> = {
-  1: "一白水星",
-  2: "二黒土星",
-  3: "三碧木星",
-  4: "四緑木星",
-  5: "五黄土星",
-  6: "六白金星",
-  7: "七赤金星",
-  8: "八白土星",
-  9: "九紫火星",
-};
-
-const DIR_LABELS: Record<Direction8, string> = {
-  N: "北",
-  NE: "北東",
-  E: "東",
-  SE: "南東",
-  S: "南",
-  SW: "南西",
-  W: "西",
-  NW: "北西",
-};
-
-const MISFORTUNE_LABELS: Record<MisfortuneType, string> = {
-  goou_satsu: "五黄殺",
-  anken_satsu: "暗剣殺",
-  saiha: "歳破",
-  geppa: "月破",
-  nippa: "日破",
-  jouiTaichu: "定位対冲",
-  honmei_satsu: "本命殺",
-  honmei_tekisatsu: "本命的殺",
-  getsumei_satsu: "月命殺",
-  getsumei_tekisatsu: "月命的殺",
-};
 
 /**
  * 3×3 の並び。null = 中央(中宮)。
@@ -91,6 +63,10 @@ export interface DirectionCompassProps {
    * 中央は方位盤の中心を示す装飾のみになる。
    */
   readonly center?: StarNumber | null;
+  /** true にすると方位セルをタップして詳細モーダルを開けるようにする(既定 false) */
+  readonly interactive?: boolean;
+  /** 詳細モーダルの見出しに添える盤の種別(例: 日盤)。interactive 時のみ使う */
+  readonly banLabel?: string | undefined;
 }
 
 function fortuneClass(fortune: DirectionFortune): string {
@@ -106,24 +82,32 @@ function fortuneClass(fortune: DirectionFortune): string {
   }
 }
 
-function fortuneLabel(fortune: DirectionFortune): string | null {
-  switch (fortune) {
-    case "great_fortune":
-      return "大吉";
-    case "fortune":
-      return "吉";
-    default:
-      return null;
-  }
-}
-
-export function DirectionCompass({ directions, center }: DirectionCompassProps) {
+export function DirectionCompass({
+  directions,
+  center,
+  interactive = false,
+  banLabel,
+}: DirectionCompassProps) {
   const dirMap = new Map(directions.map((d) => [d.direction, d]));
+  // 開いている方位。モーダルの内容は常に最新の directions から引き直すので、
+  // 盤タブ・日付を切り替えても表示が古い盤のまま残らない。
+  const [openDir, setOpenDir] = useState<Direction8 | null>(null);
+  // 閉じたときにフォーカスを戻すセル(キーボード利用者のため)
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  const close = useCallback(() => {
+    setOpenDir(null);
+    triggerRef.current?.focus();
+  }, []);
+
+  const opened = openDir ? (dirMap.get(openDir) ?? null) : null;
 
   return (
     <div className={s.card}>
       {/* 盤は回転しない。北が上であることを明示する(視覚・読み上げ共通の説明) */}
-      <div className={s.northNote}>方位盤（上が北）</div>
+      <div className={s.northNote}>
+        {interactive ? "方位盤（上が北）・方位をタップすると詳細" : "方位盤（上が北）"}
+      </div>
       <div className={s.grid}>
         {CELL_LAYOUT.map((dir) => {
           if (dir === null) {
@@ -143,24 +127,49 @@ export function DirectionCompass({ directions, center }: DirectionCompassProps) 
           }
 
           const goodLabel = fortuneLabel(item.fortune);
-
-          return (
-            <div
-              key={dir}
-              className={`${s.cell} ${fortuneClass(item.fortune)} ${CORNER_CLASS[dir] ?? ""}`}
-            >
+          const cellClass = `${s.cell} ${fortuneClass(item.fortune)} ${CORNER_CLASS[dir] ?? ""}`;
+          const inner = (
+            <>
               <span className={s.dirLabel}>{label}</span>
-              <span className={s.star}>{STAR_NAMES[item.star]?.slice(0, 2)}</span>
+              <span className={s.star}>{getStarMeaning(item.star).shortName}</span>
               {goodLabel && <span className={s.badgeGood}>{goodLabel}</span>}
               {item.misfortunes.length > 0 && (
                 <span className={s.badgeBad}>
                   {item.misfortunes.map((m) => MISFORTUNE_LABELS[m]?.slice(0, 3)).join("・")}
                 </span>
               )}
-            </div>
+            </>
+          );
+
+          if (!interactive) {
+            return (
+              <div key={dir} className={cellClass}>
+                {inner}
+              </div>
+            );
+          }
+
+          return (
+            <button
+              key={dir}
+              type="button"
+              className={`${cellClass} ${s.cellButton}`}
+              aria-label={`${label}の詳細`}
+              aria-haspopup="dialog"
+              onClick={(e) => {
+                triggerRef.current = e.currentTarget;
+                setOpenDir(dir);
+              }}
+            >
+              {inner}
+            </button>
           );
         })}
       </div>
+
+      {interactive && opened && (
+        <DirectionDetailModal item={opened} banLabel={banLabel} onClose={close} />
+      )}
     </div>
   );
 }
@@ -178,7 +187,7 @@ function CenterCell({ center }: { center: StarNumber | null }) {
   return (
     <div className={s.centerCell}>
       <span className={s.centerLabel}>中宮</span>
-      <span className={s.centerValue}>{STAR_NAMES[center]}</span>
+      <span className={s.centerValue}>{getStarMeaning(center).name}</span>
     </div>
   );
 }
