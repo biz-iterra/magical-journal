@@ -2,7 +2,8 @@ import { style } from "@vanilla-extract/css";
 import { vars } from "../styles/theme.css";
 
 export const container = style({
-  paddingBottom: "80px",
+  // 固定の保存バーぶんの余白。下部ナビぶんは Layout の main が持っている
+  paddingBottom: "84px",
 });
 
 export const pageTitle = style({
@@ -126,8 +127,9 @@ export const saveBar = style({
   position: "fixed",
   left: 0,
   right: 0,
-  bottom: 0,
-  padding: "12px 16px calc(12px + env(safe-area-inset-bottom))",
+  // 下部ナビ(固定)の真上に置く。セーフエリアはナビ側が持つので、ここでは足さない
+  bottom: `calc(${vars.layout.navHeight} + env(safe-area-inset-bottom, 0px))`,
+  padding: `${vars.space.md} ${vars.space.lg}`,
   backgroundColor: vars.color.overlaySaveBar,
   borderTop: `1px solid ${vars.color.borderHairline}`,
   backdropFilter: "blur(8px)",

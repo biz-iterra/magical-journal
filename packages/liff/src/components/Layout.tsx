@@ -6,8 +6,11 @@ interface LayoutProps {
   readonly children: ReactNode;
 }
 
-/** 下部ナビの高さ(固定表示するため main の下余白と共有する) */
-const NAV_HEIGHT = "56px";
+/**
+ * 下部ナビの高さ。値の実体は theme のトークン(vars.layout.navHeight)に一元化してある。
+ * 固定表示する他の要素(設定画面の保存バー等)がこの上に重ならないよう、同じ値を参照すること。
+ */
+const NAV_HEIGHT = vars.layout.navHeight;
 
 const navItems = [
   { to: "/", label: "今日" },

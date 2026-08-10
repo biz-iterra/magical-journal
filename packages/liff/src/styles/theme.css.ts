@@ -126,6 +126,11 @@ export const vars = createThemeContract({
     xl: null,
     xxl: null,
   },
+  /** 画面の骨格。固定要素どうしが重ならないよう高さをここで一元管理する */
+  layout: {
+    /** 下部ナビの高さ(セーフエリアは含まない) */
+    navHeight: null,
+  },
 });
 
 createGlobalTheme(":root", vars, {
@@ -223,5 +228,8 @@ createGlobalTheme(":root", vars, {
     lg: "16px",
     xl: "24px",
     xxl: "32px",
+  },
+  layout: {
+    navHeight: "56px",
   },
 });
