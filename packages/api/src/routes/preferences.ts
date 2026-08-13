@@ -34,6 +34,7 @@ import {
   upsertUserPreferences,
 } from "../db/queries.js";
 import { fail } from "../errors.js";
+import { isValidLatLng, readJsonBody } from "../lib/validate.js";
 import { parseHolidayWeekdays } from "../services/preferences.js";
 import type {
   AppEnv,
@@ -107,7 +108,9 @@ preferences.patch("/", async (c) => {
     return fail(c, "MJ-USER-404");
   }
 
-  const body = await c.req.json<PreferencesUpdateBody>();
+  const parsed = await readJsonBody<PreferencesUpdateBody>(c);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.body;
 
   if (!isValidTimeField(body.wakeTime) || !isValidTimeField(body.sleepTime)) {
     return fail(c, "MJ-PREF-001");
@@ -150,7 +153,9 @@ preferences.post("/places", async (c) => {
     return fail(c, "MJ-USER-404");
   }
 
-  const body = await c.req.json<FavoritePlaceCreateBody>();
+  const parsed = await readJsonBody<FavoritePlaceCreateBody>(c);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.body;
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const addressText = typeof body.addressText === "string" ? body.addressText.trim() : "";
@@ -164,16 +169,7 @@ preferences.post("/places", async (c) => {
   }
 
   // 座標の妥当性(フロントの Geocoding 結果。サーバーでは Geocoding しない)
-  if (
-    typeof body.lat !== "number" ||
-    typeof body.lng !== "number" ||
-    !Number.isFinite(body.lat) ||
-    !Number.isFinite(body.lng) ||
-    body.lat < -90 ||
-    body.lat > 90 ||
-    body.lng < -180 ||
-    body.lng > 180
-  ) {
+  if (!isValidLatLng(body.lat, body.lng)) {
     return fail(c, "MJ-PREF-005");
   }
 

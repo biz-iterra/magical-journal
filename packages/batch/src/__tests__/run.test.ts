@@ -177,3 +177,87 @@ describe("runDailyBatch", () => {
     expect(saveFortune).toHaveBeenCalledTimes(1);
   });
 });
+
+// ── 冪等スキップ ───────────────────────────────────────────
+// リクエストトリガー生成(GET /api/today)で当日分がある場合に、夜間バッチが
+// 同じ内容を作り直して LLM 代を二重に払わないようにする。
+
+describe("runDailyBatch の冪等スキップ", () => {
+  const users: ActiveUser[] = [
+    {
+      userId: 1,
+      birthDate: "1990-05-17",
+      birthTime: null,
+      charStyle: "male",
+      lat: null,
+      lng: null,
+    },
+    {
+      userId: 2,
+      birthDate: "1988-04-15",
+      birthTime: null,
+      charStyle: "male",
+      lat: null,
+      lng: null,
+    },
+  ];
+
+  it("生成済みユーザーは LLM を呼ばずにスキップする", async () => {
+    const generate = vi
+      .fn()
+      .mockResolvedValue('{"fortune":"a","schedule":"b","characterNote":"c"}');
+    const saveFortune = vi.fn();
+
+    const result = await runDailyBatch("2026-07-23", {
+      provider: { name: "spy", generate },
+      calendar,
+      getUsers: () => users,
+      // user 1 は生成済み
+      hasFortune: (userId) => userId === 1,
+      saveFortune,
+      logger: silentLogger,
+    });
+
+    expect(result.skipped).toBe(1);
+    expect(result.succeeded).toBe(1);
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(saveFortune).toHaveBeenCalledTimes(1);
+    expect(saveFortune.mock.calls[0]?.[0]).toBe(2);
+  });
+
+  it("force 指定時は生成済みでも再生成する", async () => {
+    const generate = vi
+      .fn()
+      .mockResolvedValue('{"fortune":"a","schedule":"b","characterNote":"c"}');
+
+    const result = await runDailyBatch("2026-07-23", {
+      provider: { name: "spy", generate },
+      calendar,
+      getUsers: () => users,
+      hasFortune: () => true,
+      saveFortune: () => undefined,
+      force: true,
+      logger: silentLogger,
+    });
+
+    expect(result.skipped).toBe(0);
+    expect(generate).toHaveBeenCalledTimes(2);
+  });
+
+  it("hasFortune 未注入なら従来どおり全員生成する", async () => {
+    const generate = vi
+      .fn()
+      .mockResolvedValue('{"fortune":"a","schedule":"b","characterNote":"c"}');
+
+    const result = await runDailyBatch("2026-07-23", {
+      provider: { name: "spy", generate },
+      calendar,
+      getUsers: () => users,
+      saveFortune: () => undefined,
+      logger: silentLogger,
+    });
+
+    expect(result.skipped).toBe(0);
+    expect(generate).toHaveBeenCalledTimes(2);
+  });
+});

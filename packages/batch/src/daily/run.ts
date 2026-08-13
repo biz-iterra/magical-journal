@@ -71,6 +71,15 @@ export interface RunDailyDeps {
   /** ユーザー取得(index.ts が DB 実装を注入。テストはフェイクを注入) */
   readonly getUsers: () => ActiveUser[];
   /**
+   * その日の運勢が生成済みか(index.ts が DB 実装を注入)。
+   * 未指定なら常に生成する(従来挙動)。
+   *
+   * ★リクエストトリガー生成(GET /api/today)で当日分が既にあるユーザーを
+   *   夜間バッチが再生成すると、同じ内容に LLM 代を二重に払うことになる。
+   *   月次・性質バッチと同じくスキップする(--force で上書き可)。
+   */
+  readonly hasFortune?: (userId: number, date: string) => boolean;
+  /**
    * ユーザーの「今日のジャーナル」設定取得(index.ts が DB 実装を注入)。
    * 未指定なら設定なし扱い = 従来の既定挙動。取得に失敗したユーザーは設定なしで続行する
    * (設定の取得失敗で運勢生成を止めない)。
@@ -85,6 +94,8 @@ export interface RunDailyDeps {
     sectionsJson: string | null,
   ) => void;
   readonly logger?: Logger;
+  /** true なら生成済みでも再生成する */
+  readonly force?: boolean;
 }
 
 export interface RunDailyFailure {
@@ -96,6 +107,8 @@ export interface RunDailyResult {
   readonly date: string;
   readonly total: number;
   readonly succeeded: number;
+  /** 生成済みだったためスキップした件数 */
+  readonly skipped: number;
   readonly failed: readonly RunDailyFailure[];
 }
 
@@ -257,8 +270,9 @@ export async function generateDailyForUser(
  */
 export async function runDailyBatch(date: string, deps: RunDailyDeps): Promise<RunDailyResult> {
   const logger = deps.logger ?? defaultLogger;
-  const { getUsers, saveFortune } = deps;
+  const { getUsers, saveFortune, hasFortune } = deps;
   const places = deps.places ?? new NullPlacesProvider();
+  const force = deps.force ?? false;
 
   const users = getUsers();
   logger.info(
@@ -267,9 +281,17 @@ export async function runDailyBatch(date: string, deps: RunDailyDeps): Promise<R
 
   const failed: RunDailyFailure[] = [];
   let succeeded = 0;
+  let skipped = 0;
 
   for (const user of users) {
     try {
+      // 冪等性: 既に当日分が生成済みならスキップ(LLM と Places を無駄に呼ばない)。
+      // リクエストトリガーで生成済みのユーザー、および部分失敗後の再実行で効く。
+      if (!force && hasFortune?.(user.userId, date)) {
+        skipped += 1;
+        continue;
+      }
+
       // ユーザー設定(お気に入り地点・活動時間帯・移動手段・休日曜日)。
       // 取得失敗は握りつぶさずログに残し、設定なしで生成を続行する(運勢を止めない)。
       let settings: UserJournalSettings | undefined;
@@ -316,6 +338,7 @@ export async function runDailyBatch(date: string, deps: RunDailyDeps): Promise<R
     date,
     total: users.length,
     succeeded,
+    skipped,
     failed,
   };
   logger.info(

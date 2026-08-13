@@ -14,6 +14,7 @@ import { computeGetsumeiStar, computeHonmeiStar, judgeDirections } from "@mj/eng
 import { Hono } from "hono";
 import { getMonthlyFortune, getProfile, getUserByLineId } from "../db/queries.js";
 import { fail } from "../errors.js";
+import { parseJsonOrNull } from "../lib/validate.js";
 import type { AppEnv } from "../types.js";
 
 const monthly = new Hono<AppEnv>();
@@ -84,9 +85,8 @@ monthly.get("/", (c) => {
     fortune: fortune
       ? {
           text: fortune.fortune_text,
-          directionsJson: fortune.directions_json
-            ? (JSON.parse(fortune.directions_json) as unknown)
-            : null,
+          // 壊れた行で方位まで巻き添えに 500 にしない
+          directionsJson: parseJsonOrNull(fortune.directions_json),
         }
       : null,
   });

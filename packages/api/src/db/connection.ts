@@ -19,12 +19,25 @@ export function getDb(): Database.Database {
 }
 
 /**
+ * 接続ごとの設定を当てる。
+ *
+ * ★foreign_keys は接続単位の設定。api だけ未設定だと、スキーマに書いた外部キー制約が
+ *   「書き込みの大半を担う側では効かない」状態になる(batch では効く)。
+ *   同じ DB ファイルを共有するので、pragma は必ず両者で揃える。
+ */
+function applyPragmas(db: Database.Database): Database.Database {
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
+  return db;
+}
+
+/**
  * DB 接続を初期化する。
  * 既に初期化済みの場合は既存インスタンスを返す。
  */
 export function initConnection(path: string): Database.Database {
   if (instance) return instance;
-  instance = new Database(path);
+  instance = applyPragmas(new Database(path));
   return instance;
 }
 
@@ -43,6 +56,7 @@ export function initMemoryDb(): Database.Database {
   if (instance) {
     instance.close();
   }
-  instance = new Database(":memory:");
+  // 本番と同じ制約で動かす(WAL はインメモリでは無視される)
+  instance = applyPragmas(new Database(":memory:"));
   return instance;
 }

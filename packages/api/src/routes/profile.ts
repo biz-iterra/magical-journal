@@ -10,6 +10,7 @@ import { Hono } from "hono";
 import { getDb } from "../db/connection.js";
 import { getDiagResults, getProfile, getUserByLineId, updateProfile } from "../db/queries.js";
 import { fail } from "../errors.js";
+import { isAbsentOrValidLatLng, isValidBirthTime, readJsonBody } from "../lib/validate.js";
 import { runAndSaveDiagnosis } from "../services/diagnosis.js";
 import type { AppEnv, ProfileUpdateBody } from "../types.js";
 
@@ -61,14 +62,21 @@ profile.patch("/", async (c) => {
     return fail(c, "MJ-USER-404");
   }
 
-  const body = await c.req.json<ProfileUpdateBody>();
+  const parsed = await readJsonBody<ProfileUpdateBody>(c);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.body;
 
   if (body.charStyle !== undefined && body.charStyle !== "male" && body.charStyle !== "female") {
     return fail(c, "MJ-PROF-001");
   }
 
-  if (body.birthTime !== undefined && !/^\d{2}:\d{2}$/.test(body.birthTime)) {
+  if (body.birthTime != null && !isValidBirthTime(body.birthTime)) {
     return fail(c, "MJ-PROF-002");
+  }
+
+  // 座標。無検証だと文字列や範囲外がそのまま保存され、方位・場所提案が壊れる
+  if (!isAbsentOrValidLatLng(body.lat, body.lng)) {
+    return fail(c, "MJ-PROF-003");
   }
 
   // 出生時刻はポテンシャルタイプ(ハイブリッド判定)に影響するため、

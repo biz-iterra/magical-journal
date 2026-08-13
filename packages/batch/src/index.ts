@@ -21,6 +21,7 @@ import {
   getActiveUsers,
   getPersonalityReportJson,
   getUserJournalSettings,
+  hasDailyFortune,
   hasMonthlyFortune,
   saveDailyFortune,
   saveMonthlyFortune,
@@ -74,6 +75,7 @@ async function runDailyOnce(date: string): Promise<number> {
     placesRadiusMeters: config.placesRadiusMeters,
     getUsers: getActiveUsers,
     getSettings: getUserJournalSettings,
+    hasFortune: hasDailyFortune,
     saveFortune: saveDailyFortune,
   });
 
@@ -147,6 +149,7 @@ function startScheduler(): void {
         placesRadiusMeters: cfg.placesRadiusMeters,
         getUsers: getActiveUsers,
         getSettings: getUserJournalSettings,
+        hasFortune: hasDailyFortune,
         saveFortune: saveDailyFortune,
       })
         .then(() =>

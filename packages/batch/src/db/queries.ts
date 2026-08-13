@@ -164,7 +164,29 @@ export function saveMonthlyFortune(
 }
 
 /**
- * 当該気学月の月次運勢が既に存在するかを返す(冪等性チェック用)。
+ * その日の日次運勢が既に生成済みかを返す(冪等性チェック用)。
+ *
+ * リクエストトリガー生成(GET /api/today)で当日分がある場合に、夜間バッチが
+ * 同じ内容を作り直して LLM 代を二重に払わないようにする。
+ * 「行はあるが本文が無い」状態(生成失敗時)は未生成として扱い、バッチで救う。
+ */
+export function hasDailyFortune(userId: number, date: string): boolean {
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT 1 FROM daily_fortunes
+        WHERE user_id = ? AND date = ? AND sections_json IS NOT NULL
+        LIMIT 1`,
+    )
+    .get(userId, date);
+  return row !== undefined;
+}
+
+/**
+ * 当該気学月の月次運勢が既に生成済みかを返す(冪等性チェック用)。
+ *
+ * ★行の有無ではなく本文の有無で判定する。生成に失敗して fortune_text=null の行が
+ *   残っている場合、行だけを見てスキップすると保険バッチが永久に修復しない。
  */
 export function hasMonthlyFortune(
   userId: number,
@@ -176,6 +198,7 @@ export function hasMonthlyFortune(
     .prepare(
       `SELECT 1 FROM monthly_fortunes
         WHERE user_id = ? AND kigaku_year = ? AND kigaku_month = ?
+          AND fortune_text IS NOT NULL
         LIMIT 1`,
     )
     .get(userId, kigakuYear, kigakuMonth);

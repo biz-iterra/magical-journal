@@ -27,6 +27,8 @@ import {
   saveMonthlyFortune,
 } from "../db/queries.js";
 import { fail } from "../errors.js";
+import { runOnce, startOnce } from "../lib/generation-guard.js";
+import { parseJsonOrNull } from "../lib/validate.js";
 import { buildGenerationProviders } from "../services/generation.js";
 import { buildHourlyDirections } from "../services/hourly.js";
 import { generateAndSaveMonthly } from "../services/monthly.js";
@@ -94,33 +96,36 @@ today.get("/", async (c) => {
   let fortune = getDailyFortune(user.id, dateStr);
   if (!fortune || !fortune.sections_json) {
     try {
-      const { config, provider, places } = buildGenerationProviders();
-      const activeUser = {
-        userId: user.id,
-        birthDate: prof.birth_date,
-        birthTime: prof.birth_time,
-        charStyle: prof.char_style,
-        lat: prof.lat,
-        lng: prof.lng,
-      };
-      const gen = await generateDailyForUser(activeUser, dateStr, {
-        provider,
-        calendar,
-        places,
-        placesOffsetKm: config.placesOffsetKm,
-        placesRadiusMeters: config.placesRadiusMeters,
-        // ユーザー設定(よく行く場所・活動時間帯・移動手段・休日曜日)。
-        // 未設定なら EMPTY 相当が返り、従来の既定挙動になる。
-        settings: loadJournalSettings(user.id),
+      // 生成待ちの間にリロードされると同じ日の生成が並走し、そのぶん LLM 課金が増える。
+      // 同一(ユーザー, 日付)の生成は1本にまとめ、失敗が続く場合はバックオフする。
+      await runOnce(`daily:${String(user.id)}:${dateStr}`, async () => {
+        const { config, provider, places } = buildGenerationProviders();
+        const activeUser = {
+          userId: user.id,
+          birthDate: prof.birth_date,
+          birthTime: prof.birth_time,
+          charStyle: prof.char_style,
+          lat: prof.lat,
+          lng: prof.lng,
+        };
+        const gen = await generateDailyForUser(activeUser, dateStr, {
+          provider,
+          calendar,
+          places,
+          placesOffsetKm: config.placesOffsetKm,
+          placesRadiusMeters: config.placesRadiusMeters,
+          // ユーザー設定(よく行く場所・活動時間帯・移動手段・休日曜日)。
+          // 未設定なら EMPTY 相当が返り、従来の既定挙動になる。
+          settings: loadJournalSettings(user.id),
+        });
+        saveDailyFortune(
+          user.id,
+          dateStr,
+          JSON.stringify(gen.structured),
+          gen.sections.fortune || null,
+          JSON.stringify(gen.sections),
+        );
       });
-      // upsert(ON CONFLICT で安全に上書き。同時アクセスの二重生成は低トラフィックで許容)
-      saveDailyFortune(
-        user.id,
-        dateStr,
-        JSON.stringify(gen.structured),
-        gen.sections.fortune || null,
-        JSON.stringify(gen.sections),
-      );
       fortune = getDailyFortune(user.id, dateStr);
     } catch (err) {
       // 握りつぶさずログに残す。個人情報は出さない(user_id のみ)。
@@ -143,9 +148,16 @@ today.get("/", async (c) => {
       lat: prof.lat,
       lng: prof.lng,
     };
-    // generateAndSaveMonthly は throw しない(内部で失敗をログ化)。応答はブロックしない。
-    // 同時アクセスの二重生成は upsert で安全に上書きされる(低トラフィックで許容)。
-    void generateAndSaveMonthly(activeUser, dateStr, calendar);
+    // 応答はブロックしない。ただし未生成の間はアクセスのたびにここへ来るため、
+    // ガードなしだと同じ月運の生成が何本も走る(生成が失敗し続ける場合は毎アクセス課金)。
+    startOnce(
+      `monthly:${String(user.id)}:${String(kigakuYear)}-${String(kigakuMonth)}`,
+      () => generateAndSaveMonthly(activeUser, dateStr, calendar),
+      (err) => {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[today] user_id=${String(user.id)} 月運生成に失敗: ${message}`);
+      },
+    );
   }
 
   // 3セクション {fortune, schedule, characterNote}(バッチが sections_json に保存)。
@@ -167,6 +179,11 @@ today.get("/", async (c) => {
       sections = null;
     }
   }
+
+  // 生成側が保存した方位スナップショット。壊れていても画面は壊さない。
+  // ★ここを裸の JSON.parse にすると、1行の破損でその日の /api/today 全体が 500 になり、
+  //   すぐ上で算出済みの決定的な方位まで返せなくなる(このルートの前提に反する)。
+  const directionsSnapshot = parseJsonOrNull(fortune?.directions_json);
 
   return c.json({
     date: dateStr,
@@ -193,9 +210,7 @@ today.get("/", async (c) => {
           text: fortune.fortune_text,
           // 新: 3セクション。未生成/パース不能なら null
           sections,
-          directionsJson: fortune.directions_json
-            ? (JSON.parse(fortune.directions_json) as unknown)
-            : null,
+          directionsJson: directionsSnapshot,
         }
       : null,
     // 今月の月運(v0.6 で月間ページから集約)。未生成なら text=null(裏で生成が始まる)。

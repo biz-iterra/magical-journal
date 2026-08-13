@@ -18,6 +18,14 @@ import {
   savePersonalityReport,
 } from "../db/queries.js";
 import { fail } from "../errors.js";
+import {
+  isAbsentOrValidLatLng,
+  isKanaName,
+  isUniqueConstraintError,
+  isValidBirthDate,
+  isValidBirthTime,
+  readJsonBody,
+} from "../lib/validate.js";
 import { runAndSaveDiagnosis } from "../services/diagnosis.js";
 import { buildGenerationProviders } from "../services/generation.js";
 import type { AppEnv, RegisterBody } from "../types.js";
@@ -27,14 +35,16 @@ const register = new Hono<AppEnv>();
 register.post("/", async (c) => {
   const lineUserId = c.get("lineUserId");
 
-  // 既存ユーザーチェック
+  // 既存ユーザーチェック(早期に弾くための確認。確定判定はトランザクション内で行う)
   const existing = getUserByLineId(lineUserId);
   if (existing) {
     return fail(c, "MJ-REG-409");
   }
 
-  // リクエストボディの検証
-  const body = await c.req.json<RegisterBody>();
+  // リクエストボディの検証。壊れた JSON は 500 ではなく 400 で返す
+  const parsed = await readJsonBody<RegisterBody>(c);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.body;
 
   if (!body.birthDate || !body.nameKana || !body.nameRomaji || !body.charStyle) {
     return fail(c, "MJ-REG-001");
@@ -44,14 +54,25 @@ register.post("/", async (c) => {
     return fail(c, "MJ-REG-002");
   }
 
-  // 日付形式の簡易チェック
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(body.birthDate)) {
+  // 生年月日は書式だけでなく暦上の実在も見る。
+  // "2000-02-31" を通すと診断側が黙って 3/2 として計算し、誤った結果が永続化される。
+  if (!isValidBirthDate(body.birthDate)) {
     return fail(c, "MJ-REG-003");
   }
 
-  // 出生時刻の簡易チェック
-  if (body.birthTime !== undefined && !/^\d{2}:\d{2}$/.test(body.birthTime)) {
+  if (body.birthTime != null && !isValidBirthTime(body.birthTime)) {
     return fail(c, "MJ-REG-004");
+  }
+
+  // 座標。無検証だと文字列や範囲外がそのまま保存され、方位・場所提案が壊れる
+  if (!isAbsentOrValidLatLng(body.lat, body.lng)) {
+    return fail(c, "MJ-REG-005");
+  }
+
+  // ローマ字はかなから変換した確定表記。かな・漢字が残っていると診断側で例外になるため、
+  // ここで弾いて 400 で返す(500 にしない)
+  if (!isKanaName(body.nameKana)) {
+    return fail(c, "MJ-REG-006");
   }
 
   // トランザクションで一括処理
@@ -87,7 +108,17 @@ register.post("/", async (c) => {
     return user;
   });
 
-  const user = transaction();
+  // 二重送信(ダブルタップ)では上の存在チェックを2本とも通過しうる。
+  // 2本目は users.line_user_id の UNIQUE 制約に当たるので、500 ではなく 409 に変換する。
+  let user: ReturnType<typeof createUser>;
+  try {
+    user = transaction();
+  } catch (err) {
+    if (isUniqueConstraintError(err)) {
+      return fail(c, "MJ-REG-409");
+    }
+    throw err;
+  }
 
   // 性質レポートを非同期(fire-and-forget)で先行生成する。
   // 201 はブロックしない。生成失敗しても登録は失敗させない(CLAUDE.md ルール6: グレースフル)。
