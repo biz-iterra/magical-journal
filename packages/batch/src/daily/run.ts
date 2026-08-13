@@ -342,7 +342,8 @@ export async function runDailyBatch(date: string, deps: RunDailyDeps): Promise<R
     failed,
   };
   logger.info(
-    `[daily] date=${date} 完了 total=${String(result.total)} ok=${String(succeeded)} ng=${String(failed.length)}`,
+    // skip= を必ず出す。出さないと「ok=0 ng=0」がスキップなのか対象ゼロなのか判別できない
+    `[daily] date=${date} 完了 total=${String(result.total)} ok=${String(succeeded)} skip=${String(skipped)} ng=${String(failed.length)}`,
   );
   return result;
 }
