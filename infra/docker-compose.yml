@@ -18,9 +18,12 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
       # LLM / Places(リクエストトリガー生成: /api/today 初回アクセス生成・登録時の
       # 性質レポート生成・手動再生成に使用)。変数名は batch と共通。
-      - LLM_PROVIDER=${LLM_PROVIDER:-claude}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # 既定は openai(GPT で確定。docs/01)。claude へ切り替える場合のみ
+      # LLM_PROVIDER=claude と ANTHROPIC_API_KEY を .env に設定する。
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # 未使用でも compose が警告を出さないよう既定を空にする(使うのは claude 選択時のみ)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - CLAUDE_MODEL=${CLAUDE_MODEL:-}
       - OPENAI_MODEL=${OPENAI_MODEL:-}
       - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-}
@@ -40,9 +43,12 @@ services:
       - DATABASE_PATH=/data/mj.sqlite
       - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET}
       - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN}
-      - LLM_PROVIDER=${LLM_PROVIDER:-claude}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # 既定は openai(GPT で確定。docs/01)。claude へ切り替える場合のみ
+      # LLM_PROVIDER=claude と ANTHROPIC_API_KEY を .env に設定する。
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # 未使用でも compose が警告を出さないよう既定を空にする(使うのは claude 選択時のみ)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       # モデル・生成・スケジュールは未設定ならコンテナ内の既定値を使用
       - CLAUDE_MODEL=${CLAUDE_MODEL:-}
       - OPENAI_MODEL=${OPENAI_MODEL:-}
