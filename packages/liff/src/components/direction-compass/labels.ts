@@ -1,35 +1,28 @@
-import type { Direction8, DirectionFortune, MisfortuneType } from "@mj/engine";
+import type { Direction8, DirectionFortune } from "@mj/engine";
+import { DIRECTION_EFFECTS, MISFORTUNE_LABELS } from "@mj/engine";
 
 /**
  * 方位盤とその詳細モーダルで共用する表示ラベル。
  *
  * 盤とモーダルで語彙がずれると別物に見えるため、必ずここを唯一の定義とする。
  * 判定そのもの(吉凶・凶方位の種類)は API / engine の結果をそのまま使い、UI では再計算しない。
+ *
+ * ★方位名・凶方位名は engine のマスタが正本。ここで作り直さない。
+ *   以前は凶方位名を独自に持っていたため、日盤の日破が「歳破」と表示されていた。
  */
 
 export const DIR_LABELS: Record<Direction8, string> = {
-  N: "北",
-  NE: "北東",
-  E: "東",
-  SE: "南東",
-  S: "南",
-  SW: "南西",
-  W: "西",
-  NW: "北西",
+  N: DIRECTION_EFFECTS.N.name,
+  NE: DIRECTION_EFFECTS.NE.name,
+  E: DIRECTION_EFFECTS.E.name,
+  SE: DIRECTION_EFFECTS.SE.name,
+  S: DIRECTION_EFFECTS.S.name,
+  SW: DIRECTION_EFFECTS.SW.name,
+  W: DIRECTION_EFFECTS.W.name,
+  NW: DIRECTION_EFFECTS.NW.name,
 };
 
-export const MISFORTUNE_LABELS: Record<MisfortuneType, string> = {
-  goou_satsu: "五黄殺",
-  anken_satsu: "暗剣殺",
-  saiha: "歳破",
-  geppa: "月破",
-  nippa: "日破",
-  jouiTaichu: "定位対冲",
-  honmei_satsu: "本命殺",
-  honmei_tekisatsu: "本命的殺",
-  getsumei_satsu: "月命殺",
-  getsumei_tekisatsu: "月命的殺",
-};
+export { MISFORTUNE_LABELS };
 
 /**
  * 盤のセルに出す吉のラベル(吉・大吉のみ。凶と平は別扱い)。

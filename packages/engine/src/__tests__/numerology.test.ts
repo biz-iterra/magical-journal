@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeDestiny, destinyModule } from "../numerology/destiny.js";
 import { computeLifepath, lifepathModule } from "../numerology/lifepath.js";
 import { kanaToHepburn } from "../numerology/romaji.js";
+import { computePotential } from "../potential.js";
 
 // ── ライフパスナンバー ────────────────────────────────────────
 
@@ -153,11 +154,77 @@ describe("kanaToHepburn", () => {
   it("を → O(パスポート式)", () => {
     expect(kanaToHepburn("を")).toBe("O");
   });
+
+  // ── 長音省略は O・U に限る(docs/10 §6 #3) ──────────────
+  // A・I・E の連続は長音記号ではないので綴りを保つ。
+  // ここを一律省略にするとディスティニーナンバーが変わる。
+
+  it("しいな → SHIINA(II は省略しない)", () => {
+    expect(kanaToHepburn("しいな")).toBe("SHIINA");
+  });
+
+  it("いいだ → IIDA(II は省略しない)", () => {
+    expect(kanaToHepburn("いいだ")).toBe("IIDA");
+  });
+
+  it("にいがた → NIIGATA(II は省略しない)", () => {
+    expect(kanaToHepburn("にいがた")).toBe("NIIGATA");
+  });
+
+  it("ゆうき → YUKI(UU は省略する)", () => {
+    expect(kanaToHepburn("ゆうき")).toBe("YUKI");
+  });
+
+  it("けいこ → KEIKO(EI は長音扱いしない)", () => {
+    expect(kanaToHepburn("けいこ")).toBe("KEIKO");
+  });
+
+  // ── 小書き仮名・外来音・長音符 ────────────────────────────
+  // 未対応だと変換結果にかなが残り、計算側で黙って無視されて数値が狂う。
+
+  it("外来音: ふぁん → FAN", () => {
+    expect(kanaToHepburn("ふぁん")).toBe("FAN");
+  });
+
+  it("外来音: てぃな → TINA", () => {
+    expect(kanaToHepburn("てぃな")).toBe("TINA");
+  });
+
+  it("外来音: ヴィオラ → VIORA", () => {
+    expect(kanaToHepburn("ヴィオラ")).toBe("VIORA");
+  });
+
+  it("長音符: ケーコ → KEEKO(E の長音は保持)", () => {
+    expect(kanaToHepburn("ケーコ")).toBe("KEEKO");
+  });
+
+  it("長音符: ヨーコ → YOKO(O の長音は省略)", () => {
+    expect(kanaToHepburn("ヨーコ")).toBe("YOKO");
+  });
+
+  it("変換結果にかなが残らない(小書き仮名を単独で置いても)", () => {
+    expect(kanaToHepburn("ぁぃぅぇぉゃゅょゎゔ")).toMatch(/^[A-Z]+$/);
+  });
 });
 
 // ── ディスティニーナンバー ─────────────────────────────────
 
 describe("computeDestiny", () => {
+  it("SHIINA はマスターナンバー 33(長音省略の誤りで 6 に化けないこと)", () => {
+    // S(1)+H(8)+I(9)+I(9)+N(5)+A(1) = 33
+    expect(computeDestiny("SHIINA")).toBe(33);
+    expect(computeDestiny(kanaToHepburn("しいな"))).toBe(33);
+  });
+
+  it("かな・漢字が残っていたら握りつぶさず落とす", () => {
+    expect(() => computeDestiny("FUぁN")).toThrow(/non-romaji/);
+    expect(() => computeDestiny("田中")).toThrow(/non-romaji/);
+  });
+
+  it("スペース・ハイフン・アポストロフィは許容する", () => {
+    expect(() => computeDestiny("O'BRIEN SMITH-JONES")).not.toThrow();
+  });
+
   it("TANAKA TARO → 30 → 3", () => {
     // T(2)+A(1)+N(5)+A(1)+K(2)+A(1) = 12
     // T(2)+A(1)+R(9)+O(6) = 18
@@ -254,5 +321,26 @@ describe("destinyModule", () => {
       nameKana: "たなか たろう",
     });
     expect(result).toEqual({ destiny: 3, romaji: "TANAKA TARO" });
+  });
+});
+
+// ── 日付の実在検証 ─────────────────────────────────────────
+// 書式だけ見て通すと、ユリウス日演算が黙って翌月に正規化し誤診断が保存される。
+
+describe("日付の実在判定", () => {
+  it("実在しない日付は診断に入れない", () => {
+    expect(() => computePotential("2000-02-31")).toThrow(/does not exist/);
+    expect(() => computePotential("1990-13-05")).toThrow(/invalid month/);
+    expect(() => computePotential("1999-02-29")).toThrow(/does not exist/);
+  });
+
+  it("うるう年の2月29日は通す", () => {
+    expect(() => computePotential("2000-02-29")).not.toThrow();
+    expect(() => computePotential("2024-02-29")).not.toThrow();
+  });
+
+  it("書式不正は落とす", () => {
+    expect(() => computePotential("2000/02/01")).toThrow();
+    expect(() => computePotential("2000-2-1")).toThrow();
   });
 });

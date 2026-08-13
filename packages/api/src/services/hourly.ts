@@ -50,6 +50,12 @@ export function buildHourlyDirections(
     startHour: hourBan.period.startHour,
     endHour: hourBan.period.endHour,
     center: hourBan.center,
-    directions: judgeDirections(hourBan.ban, honmeiStar, getsumeiStar, hourBan.period.index),
+    directions: judgeDirections(
+      hourBan.ban,
+      honmeiStar,
+      getsumeiStar,
+      hourBan.period.index,
+      "hour",
+    ),
   }));
 }

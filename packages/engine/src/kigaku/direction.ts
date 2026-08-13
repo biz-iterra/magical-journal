@@ -2,6 +2,7 @@ import type { EngineConfig } from "../config.js";
 import { DEFAULT_CONFIG } from "../config.js";
 import type {
   Ban,
+  BanKind,
   CalendarProvider,
   DiagnosisModule,
   Direction8,
@@ -13,7 +14,13 @@ import type {
   StarNumber,
 } from "../types.js";
 import { JYOUI_POSITIONS, buildBan, getOppositeDirection } from "./ban.js";
-import { computeGetsumeiStar, computeHonmeiStar, starToGogyo } from "./honmei.js";
+import {
+  computeGetsumeiStar,
+  computeHonmeiStar,
+  getKigakuMonth,
+  getKigakuYear,
+  starToGogyo,
+} from "./honmei.js";
 
 // ── 全方位リスト ────────────────────────────────────────────
 
@@ -81,6 +88,38 @@ const SOKOKU_PAIRS: ReadonlySet<string> = new Set([
   "metal->wood",
 ]);
 
+// ── 破の種別・表示名 ────────────────────────────────────────
+
+/**
+ * 盤の粒度 → 破の種別。
+ * ★ここで確定させる。呼び出し元で読み替えると、同じ盤の破が画面と生成文で
+ *   別の名前になる(方位モーダルは「歳破」・運勢文は「日破」といった食い違い)。
+ */
+const HA_TYPE: Readonly<Record<BanKind, MisfortuneType>> = {
+  year: "saiha",
+  month: "geppa",
+  day: "nippa",
+  hour: "jiha",
+};
+
+/**
+ * 凶方位の表示名(日本語)。
+ * ★表示側で各自テーブルを持たず、必ずここを参照する(表記のずれ防止)。
+ */
+export const MISFORTUNE_LABELS: Readonly<Record<MisfortuneType, string>> = {
+  goou_satsu: "五黄殺",
+  anken_satsu: "暗剣殺",
+  saiha: "歳破",
+  geppa: "月破",
+  nippa: "日破",
+  jiha: "時破",
+  jouiTaichu: "定位対冲",
+  honmei_satsu: "本命殺",
+  honmei_tekisatsu: "本命的殺",
+  getsumei_satsu: "月命殺",
+  getsumei_tekisatsu: "月命的殺",
+};
+
 // ── 方位判定メイン関数 ──────────────────────────────────────
 
 /**
@@ -89,7 +128,8 @@ const SOKOKU_PAIRS: ReadonlySet<string> = new Set([
  * @param ban 判定対象の盤(年盤・月盤・日盤)
  * @param honmeiStar 本命星
  * @param getsumeiStar 月命星
- * @param junishi 十二支番号(0〜11)。歳破/月破/日破の判定に使用
+ * @param junishi 十二支番号(0〜11)。破の判定に使用
+ * @param banKind 盤の粒度。破の呼び名(歳破/月破/日破/時破)がこれで決まる
  * @param config エンジン設定(省略時は DEFAULT_CONFIG)
  */
 export function judgeDirections(
@@ -97,6 +137,7 @@ export function judgeDirections(
   honmeiStar: StarNumber,
   getsumeiStar: StarNumber,
   junishi: number,
+  banKind: BanKind,
   config?: Partial<EngineConfig>,
 ): DirectionResult[] {
   const cfg = { ...DEFAULT_CONFIG, ...config };
@@ -171,7 +212,7 @@ export function judgeDirections(
     // 万人共通
     if (goouDir === dir) misfortunes.push("goou_satsu");
     if (ankenDir === dir) misfortunes.push("anken_satsu");
-    if (haDir === dir) misfortunes.push("saiha"); // saiha / geppa / nippa は呼び出し元で区別
+    if (haDir === dir) misfortunes.push(HA_TYPE[banKind]);
     if (jouiTaichuDirs.has(dir)) misfortunes.push("jouiTaichu");
 
     // 個人別
@@ -252,20 +293,27 @@ export const kigakuDirectionModule: DiagnosisModule = {
     const getsumeiStar = computeGetsumeiStar(honmeiStar, inputs.birthDate, calendar);
 
     // 現在の日付が必要だが、DiagnosisModule の compute は日付引数を持たない。
-    // ここでは birthDate の年の年盤・月盤で判定する(実際の運用では
+    // ここでは birthDate が属する年盤・月盤で判定する(実際の運用では
     // 対象日ベースの判定を別途 API 層で行う)。
-    const parts = inputs.birthDate.split("-");
-    const year = Number(parts[0]);
-    const month = Number(parts[1]);
+    // ★暦年月ではなく気学年月(立春・節入り区切り)を使う。
+    //   暦年をそのまま渡すと、立春前生まれで年盤も歳破も1年ずれる。
+    const kigakuYear = getKigakuYear(inputs.birthDate, calendar);
+    const kigakuMonth = getKigakuMonth(inputs.birthDate, calendar);
 
-    const yearBan = calendar.getYearBan(year);
-    const monthBan = calendar.getMonthBan(year, month);
+    const yearBan = calendar.getYearBan(kigakuYear);
+    const monthBan = calendar.getMonthBan(kigakuYear, kigakuMonth);
 
-    const yearJunishi = calendar.getYearJunishi(year);
-    const monthJunishi = calendar.getMonthJunishi(year, month);
+    const yearJunishi = calendar.getYearJunishi(kigakuYear);
+    const monthJunishi = calendar.getMonthJunishi(kigakuYear, kigakuMonth);
 
-    const yearDirections = judgeDirections(yearBan, honmeiStar, getsumeiStar, yearJunishi);
-    const monthDirections = judgeDirections(monthBan, honmeiStar, getsumeiStar, monthJunishi);
+    const yearDirections = judgeDirections(yearBan, honmeiStar, getsumeiStar, yearJunishi, "year");
+    const monthDirections = judgeDirections(
+      monthBan,
+      honmeiStar,
+      getsumeiStar,
+      monthJunishi,
+      "month",
+    );
 
     return { yearDirections, monthDirections };
   },

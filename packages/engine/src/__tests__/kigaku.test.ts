@@ -331,7 +331,7 @@ describe("五行関係", () => {
 describe("judgeDirections", () => {
   it("五黄中宮のとき五黄殺・暗剣殺が発生しない", () => {
     const ban = buildBan(5); // 五黄中宮
-    const results = judgeDirections(ban, 1, 8, 0);
+    const results = judgeDirections(ban, 1, 8, 0, "day");
 
     for (const r of results) {
       expect(r.misfortunes).not.toContain("goou_satsu");
@@ -341,7 +341,7 @@ describe("judgeDirections", () => {
 
   it("本命星中宮のとき本命殺が発生しない", () => {
     const ban = buildBan(3); // 三碧中宮
-    const results = judgeDirections(ban, 3, 5, 0); // 本命星=3=中宮
+    const results = judgeDirections(ban, 3, 5, 0, "day"); // 本命星=3=中宮
 
     for (const r of results) {
       expect(r.misfortunes).not.toContain("honmei_satsu");
@@ -351,7 +351,7 @@ describe("judgeDirections", () => {
 
   it("月命星中宮のとき月命殺が発生しない", () => {
     const ban = buildBan(8); // 八白中宮
-    const results = judgeDirections(ban, 1, 8, 0); // 月命星=8=中宮
+    const results = judgeDirections(ban, 1, 8, 0, "day"); // 月命星=8=中宮
 
     for (const r of results) {
       expect(r.misfortunes).not.toContain("getsumei_satsu");
@@ -364,7 +364,7 @@ describe("judgeDirections", () => {
     const ban = buildBan(1);
     expect(ban.positions.S).toBe(5);
 
-    const results = judgeDirections(ban, 9, 6, 0);
+    const results = judgeDirections(ban, 9, 6, 0, "day");
     const south = results.find((r) => r.direction === "S")!;
     const north = results.find((r) => r.direction === "N")!;
 
@@ -374,18 +374,18 @@ describe("judgeDirections", () => {
 
   it("破の判定: 十二支=0(子)のとき、子=北の反対=南が破", () => {
     const ban = buildBan(5);
-    const results = judgeDirections(ban, 1, 8, 0); // junishi=0(子)
+    const results = judgeDirections(ban, 1, 8, 0, "day"); // junishi=0(子)
 
     const south = results.find((r) => r.direction === "S")!;
-    expect(south.misfortunes).toContain("saiha");
+    expect(south.misfortunes).toContain("nippa");
   });
 
   it("破の判定: 十二支=6(午)のとき、午=南の反対=北が破", () => {
     const ban = buildBan(5);
-    const results = judgeDirections(ban, 1, 8, 6); // junishi=6(午)
+    const results = judgeDirections(ban, 1, 8, 6, "day"); // junishi=6(午)
 
     const north = results.find((r) => r.direction === "N")!;
-    expect(north.misfortunes).toContain("saiha");
+    expect(north.misfortunes).toContain("nippa");
   });
 
   it("定位対冲の検出: 一白(定位=北)が南に回座", () => {
@@ -398,7 +398,7 @@ describe("judgeDirections", () => {
     const ban = buildBan(6);
     expect(ban.positions.S).toBe(1);
 
-    const results = judgeDirections(ban, 3, 5, 0);
+    const results = judgeDirections(ban, 3, 5, 0, "day");
     const south = results.find((r) => r.direction === "S")!;
     expect(south.misfortunes).toContain("jouiTaichu");
   });
@@ -408,7 +408,7 @@ describe("judgeDirections", () => {
     const ban = buildBan(4);
     expect(ban.positions.N).toBe(9);
 
-    const results = judgeDirections(ban, 1, 8, 6);
+    const results = judgeDirections(ban, 1, 8, 6, "day");
     const north = results.find((r) => r.direction === "N")!;
     expect(north.misfortunes).toContain("jouiTaichu");
   });
@@ -418,7 +418,7 @@ describe("judgeDirections", () => {
     const ban = buildBan(5);
     expect(ban.positions.E).toBe(3);
 
-    const results = judgeDirections(ban, 3, 8, 0);
+    const results = judgeDirections(ban, 3, 8, 0, "day");
     const east = results.find((r) => r.direction === "E")!;
     const west = results.find((r) => r.direction === "W")!;
 
@@ -439,7 +439,7 @@ describe("judgeDirections", () => {
     // → W は great_fortune
 
     const ban = buildBan(5);
-    const results = judgeDirections(ban, 1, 6, 6); // 午破=北が破
+    const results = judgeDirections(ban, 1, 6, 6, "day"); // 午破=北が破
 
     const west = results.find((r) => r.direction === "W")!;
     // 7(金) → 1(水) は相生(金が水を生じる)
@@ -460,7 +460,7 @@ describe("judgeDirections", () => {
     const ban = buildBan(3);
     expect(ban.positions.N).toBe(8);
 
-    const results = judgeDirections(ban, 2, 3, 3);
+    const results = judgeDirections(ban, 2, 3, 3, "day");
     const north = results.find((r) => r.direction === "N")!;
     expect(north.misfortunes).toHaveLength(0);
     expect(north.fortune).toBe("fortune");
@@ -469,7 +469,7 @@ describe("judgeDirections", () => {
   it("比和を吉と扱わない場合(biwaTreatedAsGood=false)", () => {
     // 同じ盤設定で biwaTreatedAsGood=false
     const ban = buildBan(3);
-    const results = judgeDirections(ban, 2, 3, 3, { biwaTreatedAsGood: false });
+    const results = judgeDirections(ban, 2, 3, 3, "day", { biwaTreatedAsGood: false });
     const north = results.find((r) => r.direction === "N")!;
     expect(north.misfortunes).toHaveLength(0);
     expect(north.fortune).toBe("neutral");
@@ -477,7 +477,7 @@ describe("judgeDirections", () => {
 
   it("凶方位にはfortune=misfortuneが設定される", () => {
     const ban = buildBan(1); // 五黄は南(S)
-    const results = judgeDirections(ban, 9, 6, 0);
+    const results = judgeDirections(ban, 9, 6, 0, "day");
     const south = results.find((r) => r.direction === "S")!;
     expect(south.fortune).toBe("misfortune");
     expect(south.misfortunes.length).toBeGreaterThan(0);
@@ -485,7 +485,7 @@ describe("judgeDirections", () => {
 
   it("結果は常に8方位分返る", () => {
     const ban = buildBan(5);
-    const results = judgeDirections(ban, 1, 8, 0);
+    const results = judgeDirections(ban, 1, 8, 0, "day");
     expect(results).toHaveLength(8);
 
     const dirs = new Set(results.map((r) => r.direction));
@@ -494,7 +494,7 @@ describe("judgeDirections", () => {
 
   it("各結果にstarが盤上の星と一致する", () => {
     const ban = buildBan(3);
-    const results = judgeDirections(ban, 1, 8, 0);
+    const results = judgeDirections(ban, 1, 8, 0, "day");
     for (const r of results) {
       expect(r.star).toBe(ban.positions[r.direction]);
     }
@@ -545,5 +545,54 @@ describe("kigakuDirectionModule", () => {
   it("requiredInputs に birth_date と home_latlng が含まれる", () => {
     expect(kigakuDirectionModule.requiredInputs).toContain("birth_date");
     expect(kigakuDirectionModule.requiredInputs).toContain("home_latlng");
+  });
+
+  // 暦年をそのまま年盤に渡すと、立春前生まれで年盤も歳破も1年ずれる。
+  it("立春前生まれは前年の年盤で判定される(暦年をそのまま使わない)", () => {
+    const calendar = createMockCalendar();
+    const inputs = { birthDate: "2026-01-15", nameKana: "", nameRomaji: "" };
+    const before = kigakuDirectionModule.compute(inputs, calendar) as {
+      yearDirections: { direction: Direction8; star: StarNumber }[];
+    };
+    // モックの立春は 2026-02-04。1/15 は前年(2025)扱いなので 2025 の年盤と一致するはず
+    const expected = judgeDirections(
+      calendar.getYearBan(2025),
+      computeHonmeiStar("2026-01-15", calendar),
+      computeGetsumeiStar(computeHonmeiStar("2026-01-15", calendar), "2026-01-15", calendar),
+      calendar.getYearJunishi(2025),
+      "year",
+    );
+    expect(before.yearDirections).toEqual(expected);
+  });
+
+  it("年盤の破は歳破・月盤の破は月破として返る", () => {
+    const calendar = createMockCalendar();
+    const result = kigakuDirectionModule.compute(
+      { birthDate: "2026-03-15", nameKana: "", nameRomaji: "" },
+      calendar,
+    ) as {
+      yearDirections: { misfortunes: string[] }[];
+      monthDirections: { misfortunes: string[] }[];
+    };
+    const yearHa = result.yearDirections.flatMap((d) => d.misfortunes);
+    const monthHa = result.monthDirections.flatMap((d) => d.misfortunes);
+    expect(yearHa).toContain("saiha");
+    expect(yearHa).not.toContain("geppa");
+    expect(monthHa).toContain("geppa");
+    expect(monthHa).not.toContain("saiha");
+  });
+});
+
+// ── 暦マスタ下限の境界 ──────────────────────────────────────
+
+describe("暦マスタ下限(1920年1月上旬)", () => {
+  const calendar = createMockCalendar();
+
+  it("小寒より前の日付でも月命星を算出できる(前年データが無くても落ちない)", () => {
+    // モックの小寒は 1920-01-06。その前は前年の大雪(12月)の節月に属する
+    for (const date of ["1920-01-01", "1920-01-03", "1920-01-05"]) {
+      const honmei = computeHonmeiStar(date, calendar);
+      expect(() => computeGetsumeiStar(honmei, date, calendar)).not.toThrow();
+    }
   });
 });

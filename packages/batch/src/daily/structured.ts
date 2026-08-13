@@ -8,6 +8,9 @@
 
 import type { CalendarProvider, Direction8, MisfortuneType, StarNumber } from "@mj/engine";
 import {
+  DIRECTION_NAMES,
+  MISFORTUNE_LABELS,
+  STAR_NAMES,
   computeGetsumeiStar,
   computeHonmeiStar,
   computePotential,
@@ -16,48 +19,9 @@ import {
 } from "@mj/engine";
 import type { PotentialTypeId } from "@mj/engine";
 
-/** 九星の名称 */
-const STAR_NAMES: Readonly<Record<StarNumber, string>> = {
-  1: "一白水星",
-  2: "二黒土星",
-  3: "三碧木星",
-  4: "四緑木星",
-  5: "五黄土星",
-  6: "六白金星",
-  7: "七赤金星",
-  8: "八白土星",
-  9: "九紫火星",
-};
-
-/** 八方位の日本語名 */
-const DIRECTION_LABELS: Readonly<Record<Direction8, string>> = {
-  N: "北",
-  NE: "北東",
-  E: "東",
-  SE: "南東",
-  S: "南",
-  SW: "南西",
-  W: "西",
-  NW: "北西",
-};
-
-/**
- * 凶方位種別の日本語名。
- * 注: engine は日盤の破を "saiha"(破の共通プレースホルダ)で返すため、
- * 日次では「日破」として表示する(today.ts のコメント参照)。
- */
-const MISFORTUNE_LABELS: Readonly<Record<MisfortuneType, string>> = {
-  goou_satsu: "五黄殺",
-  anken_satsu: "暗剣殺",
-  saiha: "日破",
-  geppa: "月破",
-  nippa: "日破",
-  jouiTaichu: "定位対冲",
-  honmei_satsu: "本命殺",
-  honmei_tekisatsu: "本命的殺",
-  getsumei_satsu: "月命殺",
-  getsumei_tekisatsu: "月命的殺",
-};
+// 九星名・方位名・凶方位名は engine のマスタが正本。ここで表を作り直さない
+// (docs/14 の文言変更が LINE・生成文・画面のどこかにしか効かない事故を防ぐ)。
+const DIRECTION_LABELS = DIRECTION_NAMES;
 
 /** 方位1件の情報 */
 export interface DirectionInfo {
@@ -116,7 +80,7 @@ export function buildDailyStructured(
   // 当日の日盤と方位判定
   const dayBan = calendar.getDayBan(date);
   const dayJunishi = calendar.getDayJunishi(date);
-  const directions = judgeDirections(dayBan, honmeiStar, getsumeiStar, dayJunishi);
+  const directions = judgeDirections(dayBan, honmeiStar, getsumeiStar, dayJunishi, "day");
 
   // ポテンシャルタイプ(診断内容=タイプ仕様が正。docs/04 適用済みの typeName を使う)
   const potential = computePotential(birthDate, birthTime ?? undefined);

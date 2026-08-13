@@ -53,7 +53,13 @@ monthly.get("/", (c) => {
   // 月盤の取得と月方位判定
   const monthBan = calendar.getMonthBan(kigakuYear, kigakuMonth);
   const monthJunishi = calendar.getMonthJunishi(kigakuYear, kigakuMonth);
-  const monthDirections = judgeDirections(monthBan, honmeiStar, getsumeiStar, monthJunishi);
+  const monthDirections = judgeDirections(
+    monthBan,
+    honmeiStar,
+    getsumeiStar,
+    monthJunishi,
+    "month",
+  );
 
   // 月次バッチ生成済みの月運テキスト(節入り基準キーで取得)
   const fortune = getMonthlyFortune(user.id, kigakuYear, kigakuMonth);

@@ -57,8 +57,10 @@ function yearToStar(year: number): StarNumber {
 /**
  * 生年月日から気学上の年を返す。
  * 立春(月=2 の節入り日)より前なら前年扱い。
+ *
+ * ★暦年ではなくこの値を使うこと。暦年を年盤・歳破に渡すと立春前生まれが1年ずれる。
  */
-function getKigakuYear(birthDate: string, calendar: CalendarProvider): number {
+export function getKigakuYear(birthDate: string, calendar: CalendarProvider): number {
   const parts = birthDate.split("-");
   const calendarYear = Number(parts[0]);
 
@@ -100,7 +102,7 @@ function getGetsumeiKiten(honmeiStar: StarNumber): StarNumber {
  *
  * ただし、年をまたぐ場合(1月生まれなど)は前年の小寒〜当年の立春前を考慮する。
  */
-function getKigakuMonth(birthDate: string, calendar: CalendarProvider): number {
+export function getKigakuMonth(birthDate: string, calendar: CalendarProvider): number {
   const parts = birthDate.split("-");
   const calendarYear = Number(parts[0]);
 
@@ -123,22 +125,41 @@ function getKigakuMonth(birthDate: string, calendar: CalendarProvider): number {
     }
   }
 
-  // すべての境界より前(=当年の小寒(1月)より前)
-  // 前年の境界を参照して判定する
-  const prevBoundaries = calendar.getSekkiriBoundaries(calendarYear - 1);
-  const prevSorted = [...prevBoundaries].sort((a, b) =>
-    a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
-  );
+  // すべての境界より前(=当年の小寒(1月)より前)。前年の境界を参照して判定する。
+  //
+  // ★暦マスタの下限年(1920)では前年データが無く、以前はここで例外になっていた
+  //   (1920-01-01〜01-05 生まれで登録できない)。節月の並びは 2,3,…,12,1 と決まっており、
+  //   「当年の最初の境界の1つ前の節月」は前年データを見なくても確定するので、それを使う。
+  const earliest = sorted[0];
+  try {
+    const prevBoundaries = calendar.getSekkiriBoundaries(calendarYear - 1);
+    const prevSorted = [...prevBoundaries].sort((a, b) =>
+      a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+    );
 
-  for (let i = prevSorted.length - 1; i >= 0; i--) {
-    const boundary = prevSorted[i]!;
-    if (birthDate >= boundary.date) {
-      return boundary.month;
+    for (let i = prevSorted.length - 1; i >= 0; i--) {
+      const boundary = prevSorted[i]!;
+      if (birthDate >= boundary.date) {
+        return boundary.month;
+      }
     }
+  } catch {
+    // 前年が暦マスタの範囲外。下の構造的フォールバックで決める
   }
 
-  // ここに到達することはないはずだが、安全のためエラー
+  if (earliest !== undefined) {
+    return precedingSekkiMonth(earliest.month);
+  }
+
   throw new Error(`CalendarProvider: could not determine kigaku month for ${birthDate}`);
+}
+
+/**
+ * 節月の並び(2,3,…,12,1)における1つ前の月を返す。
+ * 小寒(1)の前は大雪(12)、立春(2)の前は小寒(1)。
+ */
+function precedingSekkiMonth(month: number): number {
+  return month === 2 ? 1 : month === 1 ? 12 : month - 1;
 }
 
 /**

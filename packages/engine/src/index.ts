@@ -8,6 +8,7 @@ export type {
   GogyoElement,
   Direction8,
   Ban,
+  BanKind,
   DirectionFortune,
   MisfortuneType,
   DirectionResult,
@@ -53,6 +54,8 @@ export { computeDestiny, destinyModule } from "./numerology/destiny.js";
 export {
   computeHonmeiStar,
   computeGetsumeiStar,
+  getKigakuYear,
+  getKigakuMonth,
   starToGogyo,
   kigakuProfileModule,
 } from "./kigaku/honmei.js";
@@ -72,7 +75,11 @@ export {
   isBiwa,
   isSokoku,
   kigakuDirectionModule,
+  MISFORTUNE_LABELS,
 } from "./kigaku/direction.js";
+
+// 日付ユーティリティ(実在判定。Date を生成しない)
+export { isValidIsoDate, isValidTimeOfDay, parseIsoDate, daysInMonth, isLeapYear } from "./date.js";
 
 // 象意マスタ(docs/14)
 export type { StarMeaning, StarKeywords, DirectionEffect } from "./kigaku/shougi.js";
@@ -81,6 +88,9 @@ export {
   DIRECTION_EFFECTS,
   getStarMeaning,
   getDirectionEffect,
+  STAR_NAMES,
+  STAR_SHORT_NAMES,
+  DIRECTION_NAMES,
 } from "./kigaku/shougi.js";
 
 // mapping

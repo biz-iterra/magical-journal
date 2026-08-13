@@ -5,7 +5,7 @@
  * - 清音・濁音・半濁音・拗音の標準ヘボン式変換
  * - 促音(っ): 次の子音を重ねる。CH の前は T(例: まっちゃ=MATCHA)
  * - 撥音(ん): 基本は N。B/M/P の前は M(例: しんぶん=SHIMBUN)
- * - 長音省略(ヘボン式確定済み): 同じ母音の連続は1つに、「う」による長音も省略
+ * - 長音省略(ヘボン式確定済み): 省略するのは O・U の長音のみ(docs/10 §6 #3)
  * - 結果は大文字で返す
  * - スペース・ハイフン等はそのまま通す
  */
@@ -14,13 +14,10 @@
 
 function katakanaToHiragana(char: string): string {
   const code = char.charCodeAt(0);
-  // カタカナ(ァ=0x30A1 〜 ヶ=0x30F6)→ ひらがな(ぁ=0x3041 〜)
+  // カタカナ(ァ=0x30A1 〜 ヶ=0x30F6)→ ひらがな(ぁ=0x3041 〜)。
+  // ヴ(0x30F4)もこの範囲に含まれ、ゔ(0x3094)へ変換される。
   if (code >= 0x30a1 && code <= 0x30f6) {
     return String.fromCharCode(code - 0x0060);
-  }
-  // ヴ(0x30F4) → ゔ(0x3094) — ただし変換テーブルで別途扱う
-  if (code === 0x30f4) {
-    return "ゔ"; // ゔ
   }
   return char;
 }
@@ -73,6 +70,32 @@ const YOUON_TABLE: ReadonlyMap<string, string> = new Map([
   ["ぴゃ", "PYA"],
   ["ぴゅ", "PYU"],
   ["ぴょ", "PYO"],
+  // 外来音(カタカナ名で現れる。未対応だと小書き仮名が脱落して数値が狂う)
+  ["ふぁ", "FA"],
+  ["ふぃ", "FI"],
+  ["ふぇ", "FE"],
+  ["ふぉ", "FO"],
+  ["ふゅ", "FYU"],
+  ["ゔぁ", "VA"],
+  ["ゔぃ", "VI"],
+  ["ゔぇ", "VE"],
+  ["ゔぉ", "VO"],
+  ["てぃ", "TI"],
+  ["でぃ", "DI"],
+  ["とぅ", "TU"],
+  ["どぅ", "DU"],
+  ["ちぇ", "CHE"],
+  ["しぇ", "SHE"],
+  ["じぇ", "JE"],
+  ["うぃ", "WI"],
+  ["うぇ", "WE"],
+  ["うぉ", "WO"],
+  ["つぁ", "TSA"],
+  ["つぃ", "TSI"],
+  ["つぇ", "TSE"],
+  ["つぉ", "TSO"],
+  ["くぁ", "KWA"],
+  ["ぐぁ", "GWA"],
 ]);
 
 /** 単音(1文字) → ローマ字 */
@@ -164,6 +187,18 @@ const KANA_TABLE: ReadonlyMap<string, string> = new Map([
   ["ぽ", "PO"],
   // 撥音
   ["ん", "N"],
+  // 単独で現れた小書き仮名・ゔ(拗音・外来音のペアで拾えなかった場合の受け皿)。
+  // ここが無いと変換結果にかなが残り、計算側で黙って無視されて数値が狂う。
+  ["ぁ", "A"],
+  ["ぃ", "I"],
+  ["ぅ", "U"],
+  ["ぇ", "E"],
+  ["ぉ", "O"],
+  ["ゃ", "YA"],
+  ["ゅ", "YU"],
+  ["ょ", "YO"],
+  ["ゎ", "WA"],
+  ["ゔ", "VU"],
 ]);
 
 /**
@@ -186,25 +221,29 @@ function getTrailingVowel(romaji: string): string {
 }
 
 /**
- * 長音省略: 同じ母音の連続を省略する。
- * また「う」による長音(O+U → O)も省略する。
+ * 長音省略(ヘボン式・パスポート表記)。
+ *
+ * ★省略するのは O・U の長音だけ。A・I・E の連続は長音記号ではなく
+ *   別々の音として綴る(飯田=IIDA、新潟=NIIGATA、椎名=SHIINA)。
+ *   ここを一律省略にすると、ディスティニーナンバーが実際に変わる
+ *   (SHIINA=33 のマスターナンバーが SHINA=6 に化ける)。
  *
  * ルール:
- * - 同母音連続: AA→A, II→I, UU→U, EE→E, OO→O
- * - う長音: OU→O (おう, こう, etc.)
+ * - OO→O, OU→O (大田=OTA, 佐藤=SATO)
+ * - UU→U      (裕子=YUKO)
+ * - AA・II・EE は保持
+ *
+ * ★診断結果を左右する規則(CLAUDE.md ルール2)。変更は docs/10 §6 #3 と同時に行う。
  */
 function applyLongVowelOmission(result: string): string {
-  // 同母音連続を除去し、OU→O に変換
   let output = "";
   for (let i = 0; i < result.length; i++) {
     const ch = result[i]!;
-    if (i > 0 && "AIUEO".includes(ch)) {
-      const prev = result[i - 1]!;
-      // 同母音連続は省略
-      if (ch === prev) continue;
-      // OU → O (う長音)
-      if (prev === "O" && ch === "U") continue;
-    }
+    // 直前は「出力済みの文字」で見る(3連続以上でも正しく畳める)
+    const prev = output[output.length - 1];
+    const isOLong = prev === "O" && (ch === "O" || ch === "U");
+    const isULong = prev === "U" && ch === "U";
+    if (isOLong || isULong) continue;
     output += ch;
   }
   return output;
@@ -225,6 +264,13 @@ export function kanaToHepburn(kana: string): string {
 
   while (i < hiragana.length) {
     const char = hiragana[i]!;
+
+    // 長音符(ー) — 直前の母音を繰り返す。O・U なら後段の長音省略で畳まれる
+    if (char === "ー") {
+      result += getTrailingVowel(result);
+      i++;
+      continue;
+    }
 
     // 促音(っ)
     if (char === "っ") {

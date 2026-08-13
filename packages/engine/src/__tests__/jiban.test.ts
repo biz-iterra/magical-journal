@@ -133,7 +133,7 @@ describe("時盤: 盤の構築と方位判定", () => {
     const ban = computeHourBan(NE, "youton", 4);
     expect(ban.center).toBe(5);
 
-    const results = judgeDirections(ban, 1, 6, 0);
+    const results = judgeDirections(ban, 1, 6, 0, "hour");
     const all = results.flatMap((r) => r.misfortunes);
     expect(all).not.toContain("goou_satsu");
     expect(all).not.toContain("anken_satsu");
@@ -143,7 +143,7 @@ describe("時盤: 盤の構築と方位判定", () => {
     const ban = computeHourBan(NE, "youton", 0); // 中宮=一白
     expect(ban.center).toBe(1);
 
-    const all = judgeDirections(ban, 1, 6, 0).flatMap((r) => r.misfortunes);
+    const all = judgeDirections(ban, 1, 6, 0, "hour").flatMap((r) => r.misfortunes);
     expect(all).toContain("goou_satsu");
     expect(all).toContain("anken_satsu");
   });
@@ -153,12 +153,12 @@ describe("時盤: 盤の構築と方位判定", () => {
     const period = HOUR_PERIODS[1];
     if (!period) throw new Error("period not found");
 
-    // 破は "saiha" で返り、年破/月破/日破/時破の区別は呼び出し元の責務。
+    // 時盤なので破は "jiha"(時破)で返る。盤の粒度は judgeDirections に渡す。
     // 刻の十二支を渡した場合と、別の十二支を渡した場合で破の方位が変わる。
-    const withUshi = judgeDirections(ban, 1, 6, period.index);
-    const withNe = judgeDirections(ban, 1, 6, 0);
+    const withUshi = judgeDirections(ban, 1, 6, period.index, "hour");
+    const withNe = judgeDirections(ban, 1, 6, 0, "hour");
     const haOf = (rs: typeof withUshi) =>
-      rs.filter((r) => r.misfortunes.includes("saiha")).map((r) => r.direction);
+      rs.filter((r) => r.misfortunes.includes("jiha")).map((r) => r.direction);
 
     expect(haOf(withUshi)).toHaveLength(1);
     expect(haOf(withNe)).toHaveLength(1);

@@ -117,18 +117,32 @@ export class MasterCalendarProvider implements CalendarProvider {
       }
     }
 
-    // すべての境界より前(=当年の小寒より前)
-    // 前年の境界を参照して判定する
-    const prevBoundaries = this.getSekkiriBoundaries(calendarYear - 1);
-    const prevSorted = [...prevBoundaries].sort((a, b) =>
-      a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
-    );
+    // すべての境界より前(=当年の小寒より前)。前年の境界を参照して判定する。
+    //
+    // ★マスタの下限年(1920)では前年データが無く、以前はここで例外になっていた。
+    //   節月の並びは 2,3,…,12,1 と決まっているので、「当年の最初の境界の1つ前の節月」
+    //   は前年データを見なくても確定する。それをフォールバックに使う
+    //   (engine/kigaku/honmei.ts の getKigakuMonth と同じ扱い)。
+    const earliest = sorted[0];
+    try {
+      const prevBoundaries = this.getSekkiriBoundaries(calendarYear - 1);
+      const prevSorted = [...prevBoundaries].sort((a, b) =>
+        a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+      );
 
-    for (let i = prevSorted.length - 1; i >= 0; i--) {
-      const boundary = prevSorted[i]!;
-      if (date >= boundary.date) {
-        return boundary.month;
+      for (let i = prevSorted.length - 1; i >= 0; i--) {
+        const boundary = prevSorted[i]!;
+        if (date >= boundary.date) {
+          return boundary.month;
+        }
       }
+    } catch {
+      // 前年がマスタ範囲外。下の構造的フォールバックで決める
+    }
+
+    if (earliest !== undefined) {
+      // 節月の並びで 1 つ前: 小寒(1)の前は大雪(12)、立春(2)の前は小寒(1)
+      return earliest.month === 2 ? 1 : earliest.month === 1 ? 12 : earliest.month - 1;
     }
 
     throw new Error(`Could not determine kigaku month for ${date}.`);

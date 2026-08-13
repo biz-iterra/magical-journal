@@ -42,6 +42,9 @@ const PYTHAGOREAN: Readonly<Record<string, number>> = {
 /** マスターナンバーの集合 */
 const MASTER_NUMBERS: ReadonlySet<number> = new Set([11, 22, 33]);
 
+/** ローマ字表記に現れてよい非アルファベット(数値化の対象外・エラーにもしない) */
+const ALLOWED_NON_LETTERS = /[\s\-'.·]/;
+
 /**
  * 数字の各桁を合計する。
  */
@@ -93,8 +96,17 @@ export function computeDestiny(
     const value = PYTHAGOREAN[ch];
     if (value !== undefined) {
       total += value;
+      continue;
     }
-    // スペース・記号は無視
+    // スペース・記号(ハイフン・アポストロフィ・ピリオド)は無視する。
+    // ★かな・漢字が残っている場合は変換漏れ。黙って無視すると数値が静かに狂うので落とす
+    //   (CLAUDE.md「エラーを握りつぶさない」)。
+    if (!ALLOWED_NON_LETTERS.test(ch)) {
+      throw new Error(
+        `nameRomaji contains a non-romaji character: "${ch}". ` +
+          "かな・漢字が残っています(ローマ字表記を確認してください)",
+      );
+    }
   }
 
   return reduceToNumerology(total, masterNumberEnabled);

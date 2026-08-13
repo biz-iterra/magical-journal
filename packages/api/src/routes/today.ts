@@ -66,7 +66,7 @@ today.get("/", async (c) => {
   // 日盤の取得と方位判定
   const dayBan = calendar.getDayBan(dateStr);
   const dayJunishi = calendar.getDayJunishi(dateStr);
-  const directions = judgeDirections(dayBan, honmeiStar, getsumeiStar, dayJunishi);
+  const directions = judgeDirections(dayBan, honmeiStar, getsumeiStar, dayJunishi, "day");
 
   // 年盤・月盤も計算
   const kigakuYear = calendar.getKigakuYear(dateStr);
@@ -75,8 +75,14 @@ today.get("/", async (c) => {
   const monthBan = calendar.getMonthBan(kigakuYear, kigakuMonth);
   const yearJunishi = calendar.getYearJunishi(kigakuYear);
   const monthJunishi = calendar.getMonthJunishi(kigakuYear, kigakuMonth);
-  const yearDirections = judgeDirections(yearBan, honmeiStar, getsumeiStar, yearJunishi);
-  const monthDirections = judgeDirections(monthBan, honmeiStar, getsumeiStar, monthJunishi);
+  const yearDirections = judgeDirections(yearBan, honmeiStar, getsumeiStar, yearJunishi, "year");
+  const monthDirections = judgeDirections(
+    monthBan,
+    honmeiStar,
+    getsumeiStar,
+    monthJunishi,
+    "month",
+  );
 
   // 時盤(12刻)。engine の純関数のみで完結する同期処理なので、
   // 後段の文章生成の成否に関わらず必ず返す(グレースフル方針)。

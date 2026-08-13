@@ -380,3 +380,31 @@ export const DIRECTION_EFFECTS: Readonly<Record<Direction8, DirectionEffect>> = 
 export function getDirectionEffect(direction: Direction8): DirectionEffect {
   return DIRECTION_EFFECTS[direction];
 }
+
+// ── 表示名の派生マスタ ──────────────────────────────────────
+// 上の象意マスタから導出する。api / batch / liff で表を手書きしないこと
+// (docs/14 の文言変更が一部の画面にしか効かない、という事故を防ぐ)。
+
+const ALL_STARS: readonly StarNumber[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const ALL_DIRECTIONS8: readonly Direction8[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
+function buildStarNameMap(pick: (m: StarMeaning) => string): Readonly<Record<StarNumber, string>> {
+  const out = {} as Record<StarNumber, string>;
+  for (const star of ALL_STARS) out[star] = pick(STAR_MEANINGS[star]);
+  return out;
+}
+
+/** 九星の正式名(例: 1 → 一白水星) */
+export const STAR_NAMES: Readonly<Record<StarNumber, string>> = buildStarNameMap((m) => m.name);
+
+/** 九星の略称(例: 1 → 一白) */
+export const STAR_SHORT_NAMES: Readonly<Record<StarNumber, string>> = buildStarNameMap(
+  (m) => m.shortName,
+);
+
+/** 八方位の日本語名(例: NE → 北東) */
+export const DIRECTION_NAMES: Readonly<Record<Direction8, string>> = (() => {
+  const out = {} as Record<Direction8, string>;
+  for (const dir of ALL_DIRECTIONS8) out[dir] = DIRECTION_EFFECTS[dir].name;
+  return out;
+})();

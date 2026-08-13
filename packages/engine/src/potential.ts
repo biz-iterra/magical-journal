@@ -1,3 +1,4 @@
+import { parseIsoDate } from "./date.js";
 import { POTENTIAL_TABLE } from "./potential-table.js";
 import type { DiagnosisModule, PotentialResult, PotentialTypeId, ProfileInputs } from "./types.js";
 
@@ -22,10 +23,13 @@ function toJulianDay(year: number, month: number, day: number): number {
   );
 }
 
-/** "YYYY-MM-DD" 文字列を [year, month, day] に分解する */
+/**
+ * "YYYY-MM-DD" 文字列を [year, month, day] に分解する。
+ * 実在しない日付("2000-02-31" 等)はここで落とす。通すとユリウス日演算が
+ * 黙って翌月へ正規化し、誤った診断値が保存される。
+ */
 function parseDate(dateStr: string): [number, number, number] {
-  const parts = dateStr.split("-");
-  return [Number(parts[0]), Number(parts[1]), Number(parts[2])];
+  return parseIsoDate(dateStr);
 }
 
 /**

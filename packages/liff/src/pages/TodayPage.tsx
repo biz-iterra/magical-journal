@@ -197,7 +197,7 @@ export function TodayPage() {
         const ban = calendar.getDayBan(selectedDate);
         const junishi = calendar.getDayJunishi(selectedDate);
         return {
-          directions: judgeDirections(ban, data.honmeiStar, data.getsumeiStar, junishi),
+          directions: judgeDirections(ban, data.honmeiStar, data.getsumeiStar, junishi, "day"),
           center: ban.center,
           outOfRange: false,
         };
@@ -207,7 +207,7 @@ export function TodayPage() {
         const ban = calendar.getMonthBan(selectedMonth.year, selectedMonth.month);
         const junishi = calendar.getMonthJunishi(selectedMonth.year, selectedMonth.month);
         return {
-          directions: judgeDirections(ban, data.honmeiStar, data.getsumeiStar, junishi),
+          directions: judgeDirections(ban, data.honmeiStar, data.getsumeiStar, junishi, "month"),
           center: ban.center,
           outOfRange: false,
         };

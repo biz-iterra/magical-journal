@@ -56,13 +56,13 @@ describe("buildHourlyDirections", () => {
       expect(ban).toBeDefined();
       if (!ban) continue;
       // period.index を十二支として渡した結果と一致すること
-      expect(h.directions).toEqual(judgeDirections(ban, HONMEI, GETSUMEI, h.index));
+      expect(h.directions).toEqual(judgeDirections(ban, HONMEI, GETSUMEI, h.index, "hour"));
       // 日の十二支を渡した結果とは一致しない刻が存在する(取り違えの検出)
     }
 
     const withDayJunishi = hourly.map((h) => {
       const ban = bans[h.index]?.ban;
-      return ban ? judgeDirections(ban, HONMEI, GETSUMEI, dayJunishi) : [];
+      return ban ? judgeDirections(ban, HONMEI, GETSUMEI, dayJunishi, "hour") : [];
     });
     const differs = hourly.some(
       (h, i) => JSON.stringify(h.directions) !== JSON.stringify(withDayJunishi[i]),
