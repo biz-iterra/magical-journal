@@ -3,7 +3,7 @@
  *
  * 実行モード:
  *   - 手動 1 回実行(テスト・手動トリガー用):
- *       node dist/index.js run-daily   [--date YYYY-MM-DD]
+ *       node dist/index.js run-daily   [--date YYYY-MM-DD] [--force]
  *       node dist/index.js run-monthly [--date YYYY-MM-DD] [--force]
  *   - 常駐(cron スケジューラ。日次 03:00 / 月次 毎月1日 03:30 JST):
  *       node dist/index.js
@@ -60,7 +60,7 @@ function hasForceFlag(argv: readonly string[]): boolean {
   return argv.includes("--force");
 }
 
-async function runDailyOnce(date: string): Promise<number> {
+async function runDailyOnce(date: string, force: boolean): Promise<number> {
   const config = getConfig();
   initConnection(config.databasePath);
   const provider = createLlmProvider(config);
@@ -77,14 +77,17 @@ async function runDailyOnce(date: string): Promise<number> {
     getSettings: getUserJournalSettings,
     hasFortune: hasDailyFortune,
     saveFortune: saveDailyFortune,
+    force,
   });
 
-  // 性質レポートも相乗り生成(未生成/タイプ変更のユーザーのみ。冪等)
+  // 性質レポートも相乗り生成(未生成/タイプ変更のユーザーのみ。冪等)。
+  // --force は日次と揃える(実キーでの生成確認を1コマンドで済ませられるように)。
   const personality = await runPersonalityBatch({
     provider,
     getUsers: getActiveUsers,
     getExistingReport: getPersonalityReportJson,
     saveReport: savePersonalityReport,
+    force,
   });
 
   return daily.failed.length > 0 || personality.failed.length > 0 ? 1 : 0;
@@ -214,7 +217,7 @@ async function main(): Promise<void> {
     try {
       code =
         command === "run-daily"
-          ? await runDailyOnce(date)
+          ? await runDailyOnce(date, hasForceFlag(rest))
           : await runMonthlyOnce(date, hasForceFlag(rest));
     } finally {
       closeDb();
@@ -241,7 +244,7 @@ async function main(): Promise<void> {
 
   console.error(`[batch] 未知のコマンド: ${command}`);
   console.error(
-    "usage: node dist/index.js [run-daily [--date YYYY-MM-DD] | run-monthly [--date YYYY-MM-DD] [--force] | run-personality [--force]]",
+    "usage: node dist/index.js [run-daily [--date YYYY-MM-DD] [--force] | run-monthly [--date YYYY-MM-DD] [--force] | run-personality [--force]]",
   );
   process.exit(2);
 }
