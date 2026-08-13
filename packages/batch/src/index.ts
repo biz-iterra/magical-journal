@@ -60,6 +60,35 @@ function hasForceFlag(argv: readonly string[]): boolean {
   return argv.includes("--force");
 }
 
+/**
+ * 認識できない引数があればエラーで止める。
+ *
+ * ★黙って無視すると、"--force~" のような打ち間違いが「フラグ無し」として通り、
+ *   全員スキップされたのに「強制再生成した」と誤解する。フラグの効果は
+ *   ログを注意深く読まないと分からないので、入口で落とす。
+ */
+function assertKnownArgs(argv: readonly string[], allowed: readonly string[]): void {
+  const unknown: string[] = [];
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === undefined) continue;
+    if (arg === "--date") {
+      i += 1; // 次の要素は --date の値
+      continue;
+    }
+    if (arg.startsWith("--date=")) continue;
+    if (allowed.includes(arg)) continue;
+    unknown.push(arg);
+  }
+  if (unknown.length > 0) {
+    console.error(
+      `[batch] 認識できない引数: ${unknown.join(" ")}
+` + `        使えるのは ${allowed.join(" / ")} です(打ち間違いを疑ってください)`,
+    );
+    process.exit(2);
+  }
+}
+
 async function runDailyOnce(date: string, force: boolean): Promise<number> {
   const config = getConfig();
   initConnection(config.databasePath);
@@ -198,6 +227,7 @@ async function main(): Promise<void> {
   const [, , command, ...rest] = process.argv;
 
   if (command === "run-personality") {
+    assertKnownArgs(rest, ["--force"]);
     let code = 0;
     try {
       code = await runPersonalityOnce(hasForceFlag(rest));
@@ -208,6 +238,7 @@ async function main(): Promise<void> {
   }
 
   if (command === "run-daily" || command === "run-monthly") {
+    assertKnownArgs(rest, ["--force", "--date"]);
     const date = parseDateArg(rest) ?? todayJST();
     if (!isValidDate(date)) {
       console.error(`[batch] --date は YYYY-MM-DD 形式で指定してください (got "${date}")`);
