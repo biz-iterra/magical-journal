@@ -169,3 +169,41 @@ describe("runPersonalityBatch", () => {
     expect(saveReport).not.toHaveBeenCalled();
   });
 });
+
+// ── 表記の正規化 ───────────────────────────────────────────
+// プロンプトで指示しても LLM の出力は揺れるので、決定的な整形はコードで担保する。
+
+describe("句点の正規化", () => {
+  it("文末の半角ピリオドを全角の句点にする", () => {
+    const items = parsePersonalityItems(
+      JSON.stringify({
+        basicNature: "自分のペースを大切にします.",
+        workStrength: "計画的に進められます。",
+        workWeakness: "調整が苦手な場面があります.  ",
+        socialTendency: "フラットな関係を好みます。",
+        goodAt: "発想を広げるのが得意です。",
+        badAt: "急な切り替えは負荷になりやすいです.",
+      }),
+    );
+    expect(items).not.toBeNull();
+    for (const value of Object.values(items ?? {})) {
+      expect(value.endsWith(".")).toBe(false);
+    }
+    expect(items?.basicNature).toBe("自分のペースを大切にします。");
+    expect(items?.badAt).toBe("急な切り替えは負荷になりやすいです。");
+  });
+
+  it("文中のピリオド(小数点・略語)は壊さない", () => {
+    const items = parsePersonalityItems(
+      JSON.stringify({
+        basicNature: "3.5 割ほどの余白を好みます。",
+        workStrength: "",
+        workWeakness: "",
+        socialTendency: "",
+        goodAt: "",
+        badAt: "",
+      }),
+    );
+    expect(items?.basicNature).toBe("3.5 割ほどの余白を好みます。");
+  });
+});

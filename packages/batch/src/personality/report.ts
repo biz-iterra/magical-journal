@@ -69,7 +69,19 @@ function extractJsonObject(raw: string): unknown {
   return null;
 }
 
-const asString = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+/**
+ * 文末の句点を全角に揃える。
+ *
+ * ★プロンプトで指示しても LLM の出力は揺れる(実際に「〜できます.」が出た)。
+ *   表記の統一は決定的に決まるのでコードで直す(LLM に任せない)。
+ *   小数点・英略語(e.g.)を壊さないよう、**文末の半角ピリオドだけ**を対象にする。
+ */
+function normalizePunctuation(text: string): string {
+  return text.replace(/\.\s*$/, "。");
+}
+
+const asString = (v: unknown): string =>
+  typeof v === "string" ? normalizePunctuation(v.trim()) : "";
 
 /**
  * LLM 出力を6項目にパースする。全項目が空(=構造化失敗)なら null。
