@@ -97,14 +97,16 @@ describe("領域の幾何検証", () => {
 
 describe("各領域のアクション(docs/01 §リッチメニュー設計)", () => {
   // ① 今日のジャーナル / ② 友達のタイプ診断 / ③ 今日の運勢
-  // ④ マイタイプ      / ⑤ 月間運勢         / ⑥ 設定
+  // ④ マイタイプ      / ⑤ マイタイプを見る / ⑥ 設定
   const expected = [
     { label: "今日のジャーナル", type: "uri", value: `https://liff.line.me/${LIFF_ID}/` },
     { label: "友達のタイプ診断", type: "uri", value: `https://liff.line.me/${LIFF_ID}/friend` },
     { label: "今日の運勢", type: "message", value: "今日の運勢" },
     { label: "マイタイプ", type: "message", value: "マイタイプ" },
     // v0.6: 月間ページは今日のジャーナルへ集約したため、⑤のリンク先は today
-    { label: "月間運勢", type: "uri", value: `https://liff.line.me/${LIFF_ID}/` },
+    // ⑤ は v0.6 まで「月間運勢」だったが、月間ページを今日のジャーナルへ集約した結果
+    // リンク先が ① と同一になっていた(6 枠のうち 1 枠が重複)。マイタイプ詳細へ振り直した。
+    { label: "マイタイプを見る", type: "uri", value: `https://liff.line.me/${LIFF_ID}/mytype` },
     { label: "設定", type: "uri", value: `https://liff.line.me/${LIFF_ID}/settings` },
   ] as const;
 

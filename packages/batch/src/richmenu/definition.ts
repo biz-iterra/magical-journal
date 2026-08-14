@@ -7,7 +7,7 @@
  * ┌──────────────┬──────────────┬──────────────┐
  * │ ① 今日のジャーナル │ ② 友達のタイプ診断 │ ③ 今日の運勢を聞く │
  * ├──────────────┼──────────────┼──────────────┤
- * │ ④ マイタイプ      │ ⑤ 月間運勢       │ ⑥ 設定           │
+ * │ ④ マイタイプ      │ ⑤ マイタイプを見る │ ⑥ 設定           │
  * └──────────────┴──────────────┴──────────────┘
  *
  * ③④は「メッセージ送信」。送信テキストは packages/api/src/line/webhook-handler.ts の
@@ -95,8 +95,8 @@ export const MESSAGE_TEXT_MYTYPE = "マイタイプ";
 /** 各メニューが開く LIFF のパス */
 export const LIFF_PATHS = {
   today: "/",
+  mytype: "/mytype",
   friend: "/friend",
-  monthly: "/monthly",
   settings: "/settings",
 } as const;
 
@@ -181,15 +181,18 @@ export function buildRichMenu(input: BuildRichMenuInput): RichMenuObject {
       bounds: cell(0, 1),
       action: { type: "message", label: "マイタイプ", text: MESSAGE_TEXT_MYTYPE },
     },
-    // ⑤ 月間運勢(中央下) — LIFF 起動。
-    // v0.6: 月間ページは今日のジャーナルへ集約したため、リンク先は today。
-    // (画像には「MONTHLY 月間運勢」と入っているのでラベルは据え置き。画像差し替え時に見直す)
+    // ⑤ マイタイプを見る(中央下) — LIFF 起動(マイタイプ詳細)。
+    // ④ は「メッセージ送信 → Flex カード」なので導線が異なる。
+    // ④=トーク内で軽く見る / ⑤=詳細をじっくり見る、という住み分け。
+    //
+    // v0.6 までは「月間運勢」だったが、月間ページを今日のジャーナルへ集約した結果
+    // リンク先が ① と同一になり、6 枠のうち 1 枠が重複していた。画像刷新に合わせて解消。
     {
       bounds: cell(1, 1),
       action: {
         type: "uri",
-        label: "月間運勢",
-        uri: liffUri(liffId, LIFF_PATHS.today),
+        label: "マイタイプを見る",
+        uri: liffUri(liffId, LIFF_PATHS.mytype),
       },
     },
     // ⑥ 設定(右下) — LIFF 起動(設定ページ)
