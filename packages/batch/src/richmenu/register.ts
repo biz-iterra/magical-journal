@@ -30,7 +30,8 @@ import {
   RICHMENU_HEIGHT,
   RICHMENU_WIDTH,
   buildRichMenu,
-  validateAreaCoverage,
+  coveredRatio,
+  validateAreas,
 } from "./definition.js";
 
 /** LINE のリッチメニュー画像サイズ上限(1MB) */
@@ -189,16 +190,20 @@ async function main(): Promise<void> {
   const liffId = requireEnv("LIFF_ID");
   const menu = buildRichMenu({ liffId });
 
-  // 幾何検証。POST の前に必ず通す(隙間・重なりのあるメニューは登録しない)。
-  const problems = validateAreaCoverage(menu.areas);
+  // 幾何検証。POST の前に必ず通す(はみ出し・重なりのあるメニューは登録しない)。
+  const problems = validateAreas(menu.areas);
   if (problems.length > 0) {
     console.error("リッチメニュー領域の検証に失敗しました:");
     for (const p of problems) console.error(`  - ${p}`);
     throw new Error("rich menu area validation failed");
   }
+  // 画像全体を覆わない設計(上段の左・中央は装飾)なので、被覆率を出して
+  // 「意図した装飾スペースか、領域の置き忘れか」を目視で判断できるようにする。
+  const ratio = Math.round(coveredRatio(menu.areas) * 100);
   console.log(
-    `領域検証 OK: ${String(menu.areas.length)} 領域が ` +
-      `${String(RICHMENU_WIDTH)}×${String(RICHMENU_HEIGHT)} を隙間なく被覆`,
+    `領域検証 OK: ${String(menu.areas.length)} 領域 / ` +
+      `${String(RICHMENU_WIDTH)}×${String(RICHMENU_HEIGHT)} のうち ${String(ratio)}% がタップ可能` +
+      `(残りは装飾スペースで無反応)`,
   );
 
   if (options.dryRun) {

@@ -2,23 +2,25 @@
  * リッチメニュー定義(純関数・副作用なし)。
  *
  * 一次情報は docs/01_システム設計書_v0.5.md §リッチメニュー設計。
- * 2500×1686px / 2行 × 3列の 6 分割・単一メニュー(切替なし)。
+ * 2500×1686px / 2行 × 3列のグリッド・単一メニュー(切替なし)。
  *
- * ┌──────────────┬──────────────┬──────────────┐
- * │ ① 今日のジャーナル │ ② 友達のタイプ診断 │ ③ 今日の運勢を聞く │
- * ├──────────────┼──────────────┼──────────────┤
- * │ ④ マイタイプ      │ ⑤ マイタイプを見る │ ⑥ 設定           │
+ * ┌───────────────────────────────┬──────────────┐
+ * │      (装飾。タップ領域なし)      │ ① マイタイプ   │
+ * ├──────────────┬──────────────┼──────────────┤
+ * │ ② 今日のジャーナル │ ③ 友達のタイプ診断 │ ④ 設定        │
  * └──────────────┴──────────────┴──────────────┘
  *
- * ③④は「メッセージ送信」。送信テキストは packages/api/src/line/webhook-handler.ts の
- * KEYWORD_FORTUNE / KEYWORD_MYTYPE と完全一致させること(ハンドラ側が正)。
- * 一致は __tests__/richmenu.test.ts で機械的に検証している。
+ * ★上段の左・中央は**意図的にタップ領域を置かない**(タイトル等の装飾スペース)。
+ *   LINE のリッチメニューは画像全体を覆う必要がなく、領域が無い場所は無反応になる。
  *
- * ①②⑤⑥は LIFF 起動。LIFF のパス付きディープリンク
+ * すべて LIFF 起動。LIFF のパス付きディープリンク
  * (https://liff.line.me/{LIFF_ID}/<path>)を使う。packages/api/src/line/flex.ts の
  * liffDeepLink と同じ規則で、packages/liff/src/App.tsx のルート定義に対応する。
  * ※ Cloudflare Workers 側は wrangler.toml で not_found_handling =
  *   "single-page-application" を設定済みのため、サブパス直リンクでも SPA が起動する。
+ *
+ * ※「今日の運勢」「マイタイプ」とトークに直接入力したときの Flex カード応答は
+ *   packages/api/src/line/webhook-handler.ts 側に残っている(メニューからは送らなくなった)。
  */
 
 // ── リッチメニュー画像の仕様(LINE 規定サイズ) ──────────────────
@@ -83,14 +85,7 @@ export interface RichMenuObject {
   readonly areas: readonly RichMenuArea[];
 }
 
-// ── ③④ の送信テキスト(webhook ハンドラと一致必須) ────────────────
-
-/** ③ 今日の運勢を聞く → 送信テキスト(webhook の KEYWORD_FORTUNE と一致) */
-export const MESSAGE_TEXT_FORTUNE = "今日の運勢";
-/** ④ マイタイプ → 送信テキスト(webhook の KEYWORD_MYTYPE と一致) */
-export const MESSAGE_TEXT_MYTYPE = "マイタイプ";
-
-// ── ①②⑤⑥ の LIFF パス(packages/liff/src/App.tsx のルートと一致) ──
+// ── LIFF パス(packages/liff/src/App.tsx のルートと一致) ──
 
 /** 各メニューが開く LIFF のパス */
 export const LIFF_PATHS = {
@@ -128,7 +123,7 @@ const MAX_CHAT_BAR_TEXT_LENGTH = 14;
 
 /**
  * リッチメニューオブジェクトを組み立てる(純関数)。
- * 領域の並びは docs/01 の ①〜⑥(左上 → 右上 → 左下 → 右下)。
+ * 領域の並びは docs/01 の ①〜④(右上 → 左下 → 中央下 → 右下)。
  */
 export function buildRichMenu(input: BuildRichMenuInput): RichMenuObject {
   const liffId = input.liffId.trim();
@@ -153,49 +148,35 @@ export function buildRichMenu(input: BuildRichMenuInput): RichMenuObject {
   });
 
   const areas: readonly RichMenuArea[] = [
-    // ① 今日のジャーナル(左上・メイン導線) — LIFF 起動(今日のページ)
+    // ① マイタイプ(右上) — LIFF 起動(マイタイプ詳細)
+    // 上段の左・中央は装飾のためタップ領域を置かない(無反応でよい)。
     {
-      bounds: cell(0, 0),
+      bounds: cell(2, 0),
+      action: {
+        type: "uri",
+        label: "マイタイプ",
+        uri: liffUri(liffId, LIFF_PATHS.mytype),
+      },
+    },
+    // ② 今日のジャーナル(左下・メイン導線) — LIFF 起動(今日のページ)
+    {
+      bounds: cell(0, 1),
       action: {
         type: "uri",
         label: "今日のジャーナル",
         uri: liffUri(liffId, LIFF_PATHS.today),
       },
     },
-    // ② 友達のタイプ診断(中央上) — LIFF 起動(端末内完結。未登録でも利用可)
+    // ③ 友達のタイプ診断(中央下) — LIFF 起動(端末内完結。未登録でも利用可)
     {
-      bounds: cell(1, 0),
+      bounds: cell(1, 1),
       action: {
         type: "uri",
         label: "友達のタイプ診断",
         uri: liffUri(liffId, LIFF_PATHS.friend),
       },
     },
-    // ③ 今日の運勢を聞く(右上) — メッセージ送信 → webhook が Flex 運勢カードを返信
-    {
-      bounds: cell(2, 0),
-      action: { type: "message", label: "今日の運勢", text: MESSAGE_TEXT_FORTUNE },
-    },
-    // ④ マイタイプ(左下) — メッセージ送信 → webhook が Flex タイプカードを返信
-    {
-      bounds: cell(0, 1),
-      action: { type: "message", label: "マイタイプ", text: MESSAGE_TEXT_MYTYPE },
-    },
-    // ⑤ マイタイプを見る(中央下) — LIFF 起動(マイタイプ詳細)。
-    // ④ は「メッセージ送信 → Flex カード」なので導線が異なる。
-    // ④=トーク内で軽く見る / ⑤=詳細をじっくり見る、という住み分け。
-    //
-    // v0.6 までは「月間運勢」だったが、月間ページを今日のジャーナルへ集約した結果
-    // リンク先が ① と同一になり、6 枠のうち 1 枠が重複していた。画像刷新に合わせて解消。
-    {
-      bounds: cell(1, 1),
-      action: {
-        type: "uri",
-        label: "マイタイプを見る",
-        uri: liffUri(liffId, LIFF_PATHS.mytype),
-      },
-    },
-    // ⑥ 設定(右下) — LIFF 起動(設定ページ)
+    // ④ 設定(右下) — LIFF 起動(設定ページ)
     {
       bounds: cell(2, 1),
       action: {
@@ -223,15 +204,24 @@ function overlaps(a: RichMenuBounds, b: RichMenuBounds): boolean {
 }
 
 /**
- * 領域が画像全体を「隙間なく・重なりなく」覆っているかを検証する。
+ * タップ領域を検証する。
  *
- * 「全領域が画像内に収まる」＋「面積の合計が画像面積と一致」＋「相互に重ならない」
- * の 3 条件が揃えば、隙間ゼロの完全被覆であることが数学的に保証される。
+ * ★画像全体を覆う必要は**ない**。上段の左・中央のように意図的に領域を置かない
+ *   装飾スペースがあってよく、そこはタップしても無反応になる(LINE の仕様)。
+ *   以前は「面積の合計 == 画像面積」を必須にしていたが、装飾スペースを設ける
+ *   デザインに変更したため、被覆の完全性は要求しない。
+ *
+ * 検証するのは「画像内に収まる」「整数座標」「相互に重ならない」の 3 点。
+ * 重なりは LINE 側の判定順に依存して意図しない遷移を起こすため必ず弾く。
  *
  * @returns 問題のメッセージ一覧(空配列なら OK)
  */
-export function validateAreaCoverage(areas: readonly RichMenuArea[]): readonly string[] {
+export function validateAreas(areas: readonly RichMenuArea[]): readonly string[] {
   const problems: string[] = [];
+
+  if (areas.length === 0) {
+    problems.push("タップ領域が 1 つもない");
+  }
 
   for (const [i, area] of areas.entries()) {
     const { x, y, width, height } = area.bounds;
@@ -262,13 +252,14 @@ export function validateAreaCoverage(areas: readonly RichMenuArea[]): readonly s
     }
   }
 
-  const total = areas.reduce((sum, a) => sum + a.bounds.width * a.bounds.height, 0);
-  const expected = RICHMENU_WIDTH * RICHMENU_HEIGHT;
-  if (total !== expected) {
-    problems.push(
-      `領域の面積合計が画像面積と一致しない(合計=${String(total)} / 期待=${String(expected)})。隙間または過不足がある`,
-    );
-  }
-
   return problems;
+}
+
+/**
+ * タップ領域が画像に占める割合(0〜1)。
+ * 装飾スペースをどれだけ取っているかを dry-run で示すために使う。
+ */
+export function coveredRatio(areas: readonly RichMenuArea[]): number {
+  const total = areas.reduce((sum, a) => sum + a.bounds.width * a.bounds.height, 0);
+  return total / (RICHMENU_WIDTH * RICHMENU_HEIGHT);
 }
